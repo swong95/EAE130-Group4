@@ -108,7 +108,6 @@ while delta > err:
 W0_history = np.array(W0_history)  # convert list to array
 
 # Plot Convergence
-plt.figure(1)
 plt.figure(figsize=(8,4))
 plt.title('Air to Air Combat Weight Estimate Convergence')
 plt.xlabel("Iteration")
@@ -143,7 +142,6 @@ while delta > err:
 W0_history = np.array(W0_history)  # convert list to array
 
 # Plot Convergence
-plt.figure(2)
 plt.figure(figsize=(8,4))
 plt.title('Strike Weight Estimate Convergence')
 plt.xlabel("Iteration")
