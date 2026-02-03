@@ -26,7 +26,14 @@ CL_max_to = 2.0
 CL_max_land = 2.4              
 Wl_Wto = 0.85                  
 
-# --- 3. Constraint Calculations ---
+# --- 3. Baseline Design Point (Dry Thrust) ---
+# Total dry thrust for 2x F404-GE-402 engines (~11,000 lbf each)
+thrust_max_dry = 11000.0 * 2   
+
+ws_baseline = W_to / s_ref
+tw_baseline_dry = thrust_max_dry / W_to
+
+# --- 4. Constraint Calculations ---
 WS = np.linspace(20, 250, 100)
 
 # A. Takeoff Field Length (TOFL)
@@ -45,7 +52,7 @@ TW_dash_sl = TW_dash_alt / thrust_lapse
 L_D_climb = 0.5 * np.sqrt(np.pi * AR * e / C_D_0) 
 TW_climb = (2 / (2 - 1)) * ((1 / L_D_climb) + 0.025) * np.ones_like(WS)
 
-# --- 4. Plotting ---
+# --- 5. Plotting ---
 plt.figure(figsize=(10, 7))
 
 # Explicitly requested title and labels
@@ -58,6 +65,10 @@ plt.plot(WS, TW_tofl, label=f'Takeoff Field Length ({s_to_req} ft)', color='blue
 plt.plot(WS, TW_dash_sl, label='Cruise', color='purple', lw=2)
 plt.plot(WS, TW_climb, label='Takeoff Climb', color='orange', ls='-', lw=2)
 plt.axvline(x=WS_max_land, color='red', label=f'Landing Field Length ({s_land_req} ft)', lw=2)
+
+# Plot Baseline Design Point (Dry Power Only)
+plt.scatter(ws_baseline, tw_baseline_dry, color='red', edgecolor='black', s=120, zorder=5, 
+            label=f'Baseline: T/W={tw_baseline_dry:.2f}, W/S={ws_baseline:.1f}')
 
 # Shading Valid Region
 y_min_valid = np.maximum(TW_tofl, TW_dash_sl)
