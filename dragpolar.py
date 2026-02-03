@@ -53,19 +53,36 @@ plt.xlim(0, 0.45)
 plt.tight_layout()
 
 plt.show()
-plt.close(fig1)
+plt.close()
 
 # Requirements and Regulations 
 # Takeoff Field Length
-BFL_eq = 32 # ft (approximation from catapult stroke length from RFP, not sure if it makes sense but going to run with this for now)
-TOP = BFL_eq/37.5  # Takeoff Parameter (TOP) in ft/knot^2
+
+# Old assumptions
+# BFL_eq = 32 # ft (approximation from catapult stroke length from RFP, not sure if it makes sense but going to run with this for now)
+# TOP = BFL_eq/37.5  # Takeoff Parameter (TOP) in ft/knot^2
+
+# Using maximum take off weight as estimate for TOP calc
+W_to = 90000 # lb
+rho_SL = 0.002377  # slugs/ft^3 (air density at sea level)
+k_s = 1.2  # ground effect factor
 rho_rhoSL = 1.0  # density ratio at sea level
 C_L_max_takeoff = 2.2  # max lift coefficient with takeoff flaps
+V_takeoff =  k_s * np.sqrt(2 * W_to / (rho_SL * s_ref * C_L_max_takeoff))  # Stall speed at takeoff in ft/s
+a_cat = 3 * 32.2  # ft/s^2 (catapult acceleration, assuming 3g)
+BFL = V_takeoff**2 / (2 * a_cat)  # balanced field length in ft
+TOP = BFL/37.5  # Takeoff Parameter (TOP) in ft/knot^2
+print("Takeoff Parameter (TOP):", TOP)
 
 # Landing Field Length
-s_land = BFL_eq * .6  # FAR Requirements
-s_a = 0 # Allowance distance (set to zero since not sure how this applies to catapult)
+# old assumptions
+# s_land = BFL_eq * .6  # FAR Requirements
+# s_a = 0 # Allowance distance (set to zero since not sure how this applies to catapult)
+
 V_approach = 244.732  # ft/s (145 knots)
+s_land = (V_approach**2) / (2 * 32.2 * (0.3))  # landing distance requirement from FAR (ft)
+# Using .3 as deceleration factor estimation
+s_a = 1000  # ft, allowance distance 
 Wl_Wto = 0.65  # Max landing to take off weight fraction
 
 # Climb 
@@ -90,7 +107,8 @@ e_dash = 0.8  # assuming clean config for dash
 WS = np.linspace(1,300,30)
 
 TW_takeoff = (WS) / (TOP * rho_rhoSL * C_L_max_takeoff)
-TW_landing = (rho_rhoSL * C_L_max_takeoff) / (80 * Wl_Wto) * (s_land + s_a) * np.ones(len(WS))
+TW_landing = (rho_rhoSL * C_L_max_takeoff) / (80 * Wl_Wto) * (s_land + s_a) * np.ones(30)
+print("TW_Landing:", TW_landing)
 TW_climb = coef_1_climb * np.ones(len(WS))
 TW_cruise = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
 
@@ -99,12 +117,13 @@ plt.title('T/W - W/S')
 plt.xlabel("W/S $(lb/ft^2)$")
 plt.ylabel("T/W")
 plt.plot(WS, TW_takeoff, label='Takeoff field length', linestyle='-', linewidth=2)
-plt.plot(TW_landing, np.linspace(0,1,30), label='Landing field length', linestyle='-', linewidth=2)
 plt.plot(WS, TW_climb, label='Takeoff climb', linestyle='-', linewidth=2)
 plt.plot(WS, TW_cruise, label='Cruise', linestyle='-', linewidth=2)
-plt.ylim(0, 0.5)
+
+ymin, ymax = plt.ylim()
+WS_landing = TW_landing[0]   # single value
+plt.vlines(WS_landing, ymin, ymax, label='Landing field length', colors='red', linewidth=2)
+# plt.ylim(0, 0.5)
 plt.legend(loc='best')
 plt.show()
-plt.close(fig2)
-
-print("TOP:", TOP)
+plt.close()
