@@ -2,71 +2,164 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-num_pilot = 2
-num_flight_attendant = 12
-num_crew = num_pilot + num_flight_attendant
-num_passengers = 314
-avg_wt_person = 82  # kg
-avg_wt_luggage = 27 # kg
+# Payload Weight Estimation
+# For the preliminary weight estimate, there are 2 cases/missions to consider: 
+# 1) Air to air combat (6x AIM-120C missiles, 2x AIM-9X missiles, 2500 lb avionics/sensors)
+# 2) Strike            (4x MK-83 JDAM bombs, 2x AIM-9X missiles, 2500 lb avionics/sensors)
+# Additionally, we will assume a single pilot
 
-W_crew = num_crew * (avg_wt_person + avg_wt_luggage) # kg
-print("W_crew: " + str(W_crew) + " kg")
+# Pilot Weight
+num_pilot = 1
+avg_wt_person = 200  # lb
 
-W_payload = num_passengers * (avg_wt_person + avg_wt_luggage) # kg
-print("W_payload: " + str(W_payload) + " kg")
+W_crew = num_pilot * avg_wt_person  # lb
+print("W_crew: " + str(W_crew) + " lb")
 
-L_D_max = 18
-L_D = 0.94 * L_D_max
-R = 9150            # nmi (Range)
-E = 30 / 60         # min --> hr (Endurance)
-c = 0.52            # lb/(lbf hr) (Specific Fuel Consumption)
-V = 251 * 1.94      # m/s --> knots (Speed)
+# Payload Weight
+W_AIM120C = 358         # lb (from: https://www.navair.navy.mil/product/AMRAAM)
+W_AIM9X  = 186          # lb (from: https://www.navair.navy.mil/product/AIM-9X-Sidewinder)
+W_JDAM   = 1015         # lb (from: https://en.wikipedia.org/wiki/Mark_83_bomb)
+W_avionics = 2500       # lb (2500 lb avionics/sensors converted to kg)
 
+num_AIM120C = 6
+num_AIM9X  = 2
+num_JDAM   = 4
+
+# Calculate payload weights for both missions
+W_payload_a2a = (num_AIM120C*W_AIM120C + num_AIM9X*W_AIM9X + W_avionics)  # lb
+print("W_payload_air2air: " + str(W_payload_a2a) + " lb")
+
+W_payload_strike = (num_JDAM*W_JDAM + num_AIM9X*W_AIM9X + W_avionics)  # lb
+print("W_payload_strike: " + str(W_payload_strike) + " lb")
+
+# Going to calculate separate weight estimates for both missions, but will keep this code here for now
+# # Use the larger payload weight for the estimate
+# W_payload = max(W_payload_air2air, W_payload_strike)
+# print("W_payload used for estimate: " + str(W_payload) + " lb")
+
+# L_D Max Estiamtion
+Wetted_asp_area = 46.0  # IMPORT IN FROM CAD MODEL 
+L_D_max = 9.25             # LOOK AT FIG 3.5 FROM RAYMER TO ESTIMATE L/D MAX BASED ON WETTED AREA ASPECT RATIO
+                        ## Using F-15 as reference id using extrapolation try 10.5 FIG 2.4 FROM Martins
+L_D = 0.866 * L_D_max   # 86.6% of L/D_max is typical estimate for jets at cruise (pg 43 of Raymer)
+
+# Mission Parameters
+R = 700                 # nmi (Range) [RFP requests 200 nmi combat radius]
+E = 20 / 60             # min --> hr (Endurance) [RFP requests 20 min loiter time minimum for landing]
+c = 0.8                 # lb/(lbf hr) (Specific Fuel Consumption) [From Raymer Table 3.3 - Current Super Hornet uses a low bypass turbofan]
+V = 589 * 0.85          # knots (Speed) [Assuming Ma =0.85 cruise speed from "Intermediate Thrust" in Strike section of RFP]
+                        ## Speed of soud pulled from Engineers Edge Table for 30,000 ft
+# ^ Double check the Ma = .85 assumption
+
+# Cruise Weight Fraction Breguet Range Equation
 W3_W2 = np.exp((-R*c) / (V*L_D))  # cruise
 print("Cruise Fuel Fraction (W3/W2): " + str(round(W3_W2, 3)))
 
-W4_W3 = np.exp((-E*c) / (L_D))    # loiter/descent
-print("Loiter Fuel Fraction (W4/W3): " + str(round(W4_W3, 3)))
+# Loiter Weight Fraction
+W5_W4 = np.exp((-E*c) / (L_D))    # loiter/descent
+print("Loiter Fuel Fraction (W5/W4): " + str(round(W5_W4, 3)))
 
+# Dash Weight Fraction (Using Breguet Range Equation with Dash Speed and Range)
+
+# Air to Air Combat Dash
+t_dash_a2a = 2/60    # hr (2 min dash time for air to air combat)
+V_dash_a2a = 589*1.6 ## knots (Speed) [Using Ma = 1.6 at 30,000 ft dash speed for Air to Air Combat]
+                     ## Speed of soud pulled from Engineers Edge Table for 30,000 ft
+R_dash_a2a = t_dash_a2a*V_dash_a2a  # nmi (Range) for dash segment
+W4_W3_dash_a2a = np.exp((- (R_dash_a2a) * c) / ((V_dash_a2a*1.2)*L_D))  # dash ##1.2? 
+print("Air to Air Dash Fuel Fraction (W4/W3): " + str(round(W4_W3_dash_a2a, 3)))
+
+# Strike Dash
+R_dash_strike = 2*50 # nmi (Range) [2x 50 mni dash to/from target for strike mission] 
+V_dash_strike = 661*0.85 ## knots (Speed) [Using Ma = .85 dash speed for Strike]
+                         ## Speed of soud pulled from Engineers Edge Table for SL
+W4_W3_dash_strike = np.exp((- (R_dash_strike) * c) / ((V_dash_strike*1.2)*L_D))  # dash ##1.2?
+print("Strike Dash Fuel Fraction (W4/W3): " + str(round(W4_W3_dash_strike, 3)))
+
+# Mission Segment Fuel Fractions from Raymer Table 3.2
 W1_W0 = 0.970   # engine start & takeoff
 W2_W1 = 0.985   # climb
-W5_W4 = 0.995   # landing
+W6_W5 = 0.995   # landing
 
-W5_W0 = W5_W4 * W4_W3 * W3_W2 * W2_W1 * W1_W0
-print("Final Fuel Fraction (W5/W0): " + str(round(W5_W0, 3)))
+W6_W0_a2a = W6_W5* W5_W4 * W4_W3_dash_a2a * W3_W2 * W2_W1 * W1_W0
+print("Air to Air Mission Final Fuel Fraction (W6/W0): " + str(round(W6_W0_a2a, 3)))
+Wf_W0_a2a = (1 - W6_W0_a2a) * 1.06    # compute fuel fraction with "trapped/reserve" factor
+print("Air to Air Total Fuel Fraction Wf/W0: {:.3f}".format(Wf_W0_a2a))
 
-Wf_W0 = (1 - W5_W0) * 1.06    # compute fuel fraction with "trapped/reserve" factor
-print("Total Fuel Fraction Wf/W0: {:.3f}".format(Wf_W0))
+W6_W0_strike = W6_W5* W5_W4 * W4_W3_dash_strike * W3_W2 * W2_W1 * W1_W0
+print("Strike Mission Final Fuel Fraction (W6/W0): " + str(round(W6_W0_strike, 3)))
+Wf_W0_strike = (1 - W6_W0_strike) * 1.06    # compute fuel fraction with "trapped/reserve" factor
+print("Strike Total Fuel Fraction Wf/W0: {:.3f}".format(Wf_W0_strike))
 
-W0 = 1000000      # kg, initial empty weight guess
+# Air to Air Mission Takeoff Gross Weight Estimation using Raymer Method
+
+W0 = 1000000      # lb, initial empty weight guess
 W0_history = []   # list of all W0 guesses for plot
 err = 1e-6        # relative convergence tolerance
 delta = 2*err     # any value greater than the tolerance
 
-A = 0.97          # From Raymer Table 3.1
-C = -0.06         # From Raymer Table 3.1
+A = 2.34          # From Raymer Table 3.1
+                  # Using Imperial value
+C = -0.130        # From Raymer Table 3.1
 
 while delta > err:
-    W0_history.append(W0)                                 # add latest value to list
-    We_W0 = A*W0**C                                       # kg, Compute empty weight ratio
-    W0_new = (W_crew + W_payload) / (1 - Wf_W0 - We_W0)   # kg, compute new TOGW
-    delta = abs(W0_new - W0) / abs(W0_new)                # find difference between last guess and current guess  
-    W0 = W0_new                                           # kg, update TOGW value
-    
+    W0_history.append(W0)                                         # add latest value to list
+    We_W0 = A*W0**C                                               # lb, Compute empty weight ratio
+    W0_new = (W_crew + W_payload_a2a) / (1 - Wf_W0_a2a - We_W0)   # lb, compute new TOGW
+    delta = abs(W0_new - W0) / abs(W0_new)                        # find difference between last guess and current guess  
+    W0 = W0_new                                                   # lb, update TOGW value
+    # print("Current A2A W0 guess: " + str(W0))
+
 W0_history = np.array(W0_history)  # convert list to array
 
 # Plot Convergence
+# plt.figure(1)
 plt.figure(figsize=(8,4))
-plt.title('Weight Estimate Convergence')
+plt.title('Air to Air Combat Weight Estimate Convergence')
 plt.xlabel("Iteration")
-plt.ylabel("W0 (kg)")
+plt.ylabel("W0 (lb)")
 plt.plot(W0_history, label='W0', linestyle='-', linewidth=2, marker=None, markersize=8)
 plt.grid(True)
 plt.legend(loc='best')
 plt.show()
 
 We = We_W0 * W0
-print("Empty Weight: " + str(round(We)) + " kg")
-print("Our regression's Empty Weight Fraction (We/W0): " + str(round(We/W0 ,3)))
+print("Air to Air Empty Weight: " + str(round(We)) + " lb")
+print("Air to Air Regression's Empty Weight Fraction (We/W0): " + str(round(We/W0 ,3)))
 
-print("Takeoff Gross Weight: " + str(round(W0)) + " kg")
+print("Air to Air Takeoff Gross Weight: " + str(round(W0)) + " lb")
+
+
+# Strike Takeoff Gross Weight Estimation using Raymer Method
+
+W0 = 1000000      # lb, initial empty weight guess
+W0_history = []   # list of all W0 guesses for plot
+err = 1e-6        # relative convergence tolerance
+delta = 2*err     # any value greater than the tolerance
+
+while delta > err:
+    W0_history.append(W0)                                               # add latest value to list
+    We_W0 = A*W0**C                                                     # lb, Compute empty weight ratio
+    W0_new = (W_crew + W_payload_strike) / (1 - Wf_W0_strike - We_W0)   # lb, compute new TOGW
+    delta = abs(W0_new - W0) / abs(W0_new)                              # find difference between last guess and current guess  
+    W0 = W0_new                                                         # lb, update TOGW value
+    # print("Current Strike W0 guess: " + str(W0))
+    
+W0_history = np.array(W0_history)  # convert list to array
+
+# Plot Convergence
+# plt.figure(2)
+plt.figure(figsize=(8,4))
+plt.title('Strike Weight Estimate Convergence')
+plt.xlabel("Iteration")
+plt.ylabel("W0 (lb)")
+plt.plot(W0_history, label='W0', linestyle='-', linewidth=2, marker=None, markersize=8)
+plt.grid(True)
+plt.legend(loc='best')
+plt.show()
+
+We = We_W0 * W0
+print("Strike Empty Weight: " + str(round(We)) + " lb")
+print("Strike Regression's Empty Weight Fraction (We/W0): " + str(round(We/W0 ,3)))
+
+print("Strike Takeoff Gross Weight: " + str(round(W0)) + " lb")
