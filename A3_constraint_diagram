@@ -51,12 +51,16 @@ print("Climb gradient coefficient:", coef_1_climb)
 
 # Cruise / Dash
 # Using dash speed for air to air mission since assignment asks for dash speed
-V_dash_a2a = 589*1.6 ## knots (Speed) [Using Ma = 1.6 at 30,000 ft dash speed for Air to Air Combat]
+V_dash_a2a = 589*1.6*1.6878 # ft/seed) [Using Ma = 1.6 at 30,000 ft dash speed for Air to Air Combat]
                      ## Speed of soud pulled from Engineers Edge Table for 30,000 ft
 rho_a2a = 0.000891  # slugs/ft^3 (air density at 30,000 ft)
 q = 1/2 * rho_a2a * V_dash_a2a**2
 e_dash = 0.8  # assuming clean config for dash
 
+# Strike Dash (Ma=0.85 @ Sea Level)
+V_dash_strike = 0.85 * 1116 # ft/s (Speed of sound at sea level is 1116 ft/s)
+rho_strike = rho_SL # slugs/ft^3 (air density at sea level)
+q_strike = 1/2 * rho_strike * V_dash_strike**2
 # WS Plot
 WS = np.linspace(1,300,30)
 
@@ -65,14 +69,16 @@ TW_takeoff = takeoff_W_S
 TW_landing = landing_W_S
 print("TW_Landing:", TW_landing)
 TW_climb = coef_1_climb * np.ones(len(WS))
-TW_cruise = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
+TW_cruise_a2a = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
+TW_strike = (q_strike * C_D_0_calc) / WS + (WS) / (q_strike * np.pi * AR * e_dash)
 
 plt.figure(figsize=(8,4))
 plt.title('T/W - W/S')
 plt.xlabel("W/S $(lb/ft^2)$")
 plt.ylabel("T/W")
 plt.plot(WS, TW_climb, label='Takeoff Climb Constraint', linestyle='-', linewidth=2)
-plt.plot(WS, TW_cruise, label='Cruise Constraint', linestyle='-', linewidth=2)
+plt.plot(WS, TW_cruise_a2a, label='A2A Dash Constraint', linestyle='-', linewidth=2)
+plt.plot(WS, TW_strike, label='Strike Dash Constraint', linestyle='-', linewidth=2)
 
 ymin, ymax = plt.ylim()
 plt.vlines(TW_takeoff, ymin, ymax, label='Takeoff Constraint', colors='blue', linewidth=2)
