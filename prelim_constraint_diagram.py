@@ -43,10 +43,15 @@ TW_tofl = (K_to * WS) / (1.0 * CL_max_to * s_to_req)
 # B. Landing Field Length (LFL)
 WS_max_land = (s_land_req * 1.0 * CL_max_land) / (80.0 * Wl_Wto) 
 
-# C. Cruise / Dash (M1.6 at 30,000 ft)
+# C. A2A Cruise / Dash (M1.6 at 30,000 ft)
 thrust_lapse = sigma_30k**0.7 
 TW_dash_alt = (q_dash * C_D_0 / WS) + (WS / (q_dash * np.pi * AR * e))
 TW_dash_sl = TW_dash_alt / thrust_lapse
+
+# C2. Strike Cruise / Dash (M0.85 at SL)
+V_strike = 0.85 * 1.6878 * 589  # Convert M0.85 to ft/s
+q_strike = 0.5 * rho_SL * V_strike**2
+TW_strike_sl = (q_strike * C_D_0 / WS) + (WS / (q_strike * np.pi * AR * e))
 
 # D. Takeoff Climb
 L_D_climb = 0.5 * np.sqrt(np.pi * AR * e / C_D_0) 
@@ -62,7 +67,8 @@ plt.ylabel('T/W', fontsize=12)
 
 # Plot Constraints
 plt.plot(WS, TW_tofl, label=f'Takeoff Field Length ({s_to_req} ft)', color='blue', lw=2)
-plt.plot(WS, TW_dash_sl, label='Cruise', color='purple', lw=2)
+plt.plot(WS, TW_dash_sl, label='A2A Cruise/Dash', color='purple', lw=2)
+plt.plot(WS, TW_strike_sl, label='Strike Cruise/Dash', color='purple', lw=2, linestyle='--')
 plt.plot(WS, TW_climb, label='Takeoff Climb', color='orange', ls='-', lw=2)
 plt.axvline(x=WS_max_land, color='red', label=f'Landing Field Length ({s_land_req} ft)', lw=2)
 
