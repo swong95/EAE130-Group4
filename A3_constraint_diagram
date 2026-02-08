@@ -1,0 +1,83 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# --- Given Constants ---
+AR = 2.80672 # Aspect Ratio
+s = 59.88512 # Span [ft]
+s_ref = 1053.94 # Reference Area [ft^2]
+S_wet = 2255.877 # Wetted Area [ft^2]
+c_f = 0.0040 # Skin Friction Coefficient 
+
+# --- Other Constants ---
+rho_SL = 0.002377  # slugs/ft^3 (air density at sea level)
+rho_landing_rhoSL = 1 # density ratio (rho/rho_SL) for landing constraint calculation
+# Calculate base C_D_0 from wetted area
+C_D_0_calc = c_f * (S_wet / s_ref)
+
+# See drag_polars_fin.py for drag polars and drag polar calculations
+
+# Requirements and Regulations 
+
+# Takeoff Constraint 
+# Using catapult constraints for takeoff to determine takeoff velocity -> determine upper bound of wing loading for takeoff constraint
+
+C_L_max_takeoff = 1.7  # CL_max for takeoff, estimate from Roskam (Table from Slide 11 in 06-PreliminarySizing_Part2.pdf)
+V_takeoff = 130 # knots, estimated from catapult diagram assuming MTOW = 70,000 lb and catapult energy level of 200
+V_takeoff = V_takeoff * 1.6878 # convert to ft/s
+# Using stall condition to determine upper bound of wingloading for takeoff constraint
+takeoff_W_S = 0.5 * rho_SL * V_takeoff**2 * C_L_max_takeoff
+print("Takeoff Wing Loading Constraint (W/S): " + str(round(takeoff_W_S, 2)) + " lb/ft^2")
+
+# Landing Field Length Constraint
+V_approach = 244.732  # ft/s (145 knots)
+C_L_max_landing = 2.1  # CL_max for landing, estimate from Roskam (Table from Slide 11 in 06-PreliminarySizing_Part2.pdf)
+landing_W_S = 0.5 * rho_SL * V_approach**2 * C_L_max_landing
+
+# old assumptions
+# s_land = (V_approach**2) / (2 * 32.2 * (0.3))  # landing distance requirement from FAR (ft)
+# # Using .3 as deceleration factor estimation
+# s_a = 1000  # ft, allowance distance 
+# Wl_Wto = 0.65  # Max landing to take off weight fraction
+
+# Climb 
+# Took values from example code, might want to double check these later
+N_eng = 2
+k_s = 1.2 
+C_L_max_climb = 2.2
+G = 0.012
+e = 0.8 # (taking high end of oswald eff factor for clean config as estimate) 
+coef_1_climb = (1/0.8) * (N_eng / (N_eng - 1)) * ((k_s**2) / C_L_max_climb * C_D_0_calc + C_L_max_climb / (np.pi * AR * e * k_s**2) + G)
+print("Climb gradient coefficient:", coef_1_climb)
+
+# Cruise / Dash
+# Using dash speed for air to air mission since assignment asks for dash speed
+V_dash_a2a = 589*1.6 ## knots (Speed) [Using Ma = 1.6 at 30,000 ft dash speed for Air to Air Combat]
+                     ## Speed of soud pulled from Engineers Edge Table for 30,000 ft
+rho_a2a = 0.000891  # slugs/ft^3 (air density at 30,000 ft)
+q = 1/2 * rho_a2a * V_dash_a2a**2
+e_dash = 0.8  # assuming clean config for dash
+
+# WS Plot
+WS = np.linspace(1,300,30)
+
+TW_takeoff = takeoff_W_S
+# TW_landing = (rho_landing_rhoSL * C_L_max_takeoff) / (80 * Wl_Wto) * (s_land + s_a) * np.ones(30)
+TW_landing = landing_W_S
+print("TW_Landing:", TW_landing)
+TW_climb = coef_1_climb * np.ones(len(WS))
+TW_cruise = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
+
+plt.figure(figsize=(8,4))
+plt.title('T/W - W/S')
+plt.xlabel("W/S $(lb/ft^2)$")
+plt.ylabel("T/W")
+plt.plot(WS, TW_climb, label='Takeoff Climb Constraint', linestyle='-', linewidth=2)
+plt.plot(WS, TW_cruise, label='Cruise Constraint', linestyle='-', linewidth=2)
+
+ymin, ymax = plt.ylim()
+plt.vlines(TW_takeoff, ymin, ymax, label='Takeoff Constraint', colors='blue', linewidth=2)
+plt.vlines(TW_landing, ymin, ymax, label='Landing Constraint', colors='orange', linewidth=2)
+# plt.ylim(0, 0.5)
+plt.legend(loc='best')
+plt.show()
+plt.close()
