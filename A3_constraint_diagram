@@ -41,12 +41,20 @@ landing_W_S = 0.5 * rho_SL * V_approach**2 * C_L_max_landing
 
 # Climb 
 # Took values from example code, might want to double check these later
-N_eng = 2
+
 k_s = 1.2 
-C_L_max_climb = 2.2
-G = 0.012
+C_D_0 = 0.01288
+W_to = 31255.0 # lbs
+SEROC_to = 200 # ft/min
+SEROC_approach = 500 # ft/min
+Vs_to = np.sqrt(2*W_to / (rho_SL * s_ref * C_L_max_takeoff))
+Vs_approach = np.sqrt(2*W_to / (rho_SL * s_ref * C_L_max_landing))
+G_to = (SEROC_to / 60) / (k_s * Vs_to)
+G_approach = (SEROC_approach / 60) / (k_s * Vs_approach)
 e = 0.8 # (taking high end of oswald eff factor for clean config as estimate) 
-coef_1_climb = (1/0.8) * (N_eng / (N_eng - 1)) * ((k_s**2) / C_L_max_climb * C_D_0_calc + C_L_max_climb / (np.pi * AR * e * k_s**2) + G)
+k = 1/(np.pi * e * AR)
+coef_1_climb = ((k_s**2 * C_D_0/C_L_max_takeoff) + k*(C_L_max_takeoff/k_s**2) + G_to) # Climb constraint for takeoff
+coef_2_climb = ((k_s**2 * C_D_0/C_L_max_landing) + k*(C_L_max_landing/k_s**2) + G_approach) # Climb constraint for approach
 print("Climb gradient coefficient:", coef_1_climb)
 
 # Cruise / Dash
@@ -64,14 +72,16 @@ TW_takeoff = takeoff_W_S
 # TW_landing = (rho_landing_rhoSL * C_L_max_takeoff) / (80 * Wl_Wto) * (s_land + s_a) * np.ones(30)
 TW_landing = landing_W_S
 print("TW_Landing:", TW_landing)
-TW_climb = coef_1_climb * np.ones(len(WS))
+TW_takeoff_climb = coef_1_climb * np.ones(len(WS))
+TW_approach_climb = coef_2_climb * np.ones(len(WS))
 TW_cruise = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
 
 plt.figure(figsize=(8,4))
 plt.title('T/W - W/S')
 plt.xlabel("W/S $(lb/ft^2)$")
 plt.ylabel("T/W")
-plt.plot(WS, TW_climb, label='Takeoff Climb Constraint', linestyle='-', linewidth=2)
+plt.plot(WS, TW_takeoff_climb, label='Takeoff Climb Constraint', linestyle='-', linewidth=2)
+plt.plot(WS, TW_approach_climb, label='Approach Climb Constraint', linestyle='-', linewidth=2)
 plt.plot(WS, TW_cruise, label='Cruise Constraint', linestyle='-', linewidth=2)
 
 ymin, ymax = plt.ylim()
