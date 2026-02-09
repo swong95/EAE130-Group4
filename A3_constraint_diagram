@@ -42,19 +42,20 @@ landing_W_S = 0.5 * rho_SL * V_approach**2 * C_L_max_landing
 # Climb 
 # Took values from example code, might want to double check these later
 
-k_s = 1.2 
+k_s_to = 1.2
+k_s_approach = 1.1 
 C_D_0 = 0.01288
 W_to = 31255.0 # lbs
 SEROC_to = 200 # ft/min
 SEROC_approach = 500 # ft/min
 Vs_to = np.sqrt(2*W_to / (rho_SL * s_ref * C_L_max_takeoff))
 Vs_approach = np.sqrt(2*W_to / (rho_SL * s_ref * C_L_max_landing))
-G_to = (SEROC_to / 60) / (k_s * Vs_to)
-G_approach = (SEROC_approach / 60) / (k_s * Vs_approach)
+G_to = (SEROC_to / 60) / (k_s_to * Vs_to)
+G_approach = (SEROC_approach / 60) / (k_s_approach * Vs_approach)
 e = 0.8 # (taking high end of oswald eff factor for clean config as estimate) 
 k = 1/(np.pi * e * AR)
-coef_1_climb = ((k_s**2 * C_D_0/C_L_max_takeoff) + k*(C_L_max_takeoff/k_s**2) + G_to) # Climb constraint for takeoff
-coef_2_climb = ((k_s**2 * C_D_0/C_L_max_landing) + k*(C_L_max_landing/k_s**2) + G_approach) # Climb constraint for approach
+coef_1_climb = ((k_s_to**2 * C_D_0/C_L_max_takeoff) + k*(C_L_max_takeoff/k_s_to**2) + G_to) # Climb constraint for takeoff
+coef_2_climb = ((k_s_approach**2 * C_D_0/C_L_max_landing) + k*(C_L_max_landing/k_s_approach**2) + G_approach) # Climb constraint for approach
 print("Climb gradient coefficient:", coef_1_climb)
 
 # Cruise / Dash
