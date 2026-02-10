@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # --- Given Constants ---
-AR = 2.80672 # Aspect Ratio
+AR = 3.36462 # Aspect Ratio
 s = 59.88512 # Span [ft]
 s_ref = 1053.94 # Reference Area [ft^2]
 S_wet = 2255.877 # Wetted Area [ft^2]
