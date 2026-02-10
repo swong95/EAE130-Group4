@@ -11,8 +11,12 @@ c_f = 0.0040 # Skin Friction Coefficient
 # --- Other Constants ---
 rho_SL = 0.002377  # slugs/ft^3 (air density at sea level)
 rho_landing_rhoSL = 1 # density ratio (rho/rho_SL) for landing constraint calculation
+rho_20000 = 0.001267 # slugs/ft^3 (air density at 20,000 ft)
+g = 32.174 # ft/s^2 (gravity)
+
 # Calculate base C_D_0 from wetted area
 C_D_0_calc = c_f * (S_wet / s_ref)
+
 
 # See drag_polars_fin.py for drag polars and drag polar calculations
 
@@ -25,11 +29,11 @@ C_L_max_takeoff = 1.7  # CL_max for takeoff, estimate from Roskam (Table from Sl
 V_takeoff = 130 # knots, estimated from catapult diagram assuming MTOW = 70,000 lb and catapult energy level of 200
 V_takeoff = V_takeoff * 1.6878 # convert to ft/s
 # Using stall condition to determine upper bound of wingloading for takeoff constraint
-takeoff_W_S = 0.5 * rho_SL * V_takeoff**2 * C_L_max_takeoff
+takeoff_W_S = 0.5 * rho_SL * V_takeoff**2 * C_L_max_takeoff/1.21
 print("Takeoff Wing Loading Constraint (W/S): " + str(round(takeoff_W_S, 2)) + " lb/ft^2")
 
 # Landing Field Length Constraint
-V_approach = 244.732  # ft/s (145 knots)
+V_approach = 244.732/1.2  # ft/s (145 knots)
 C_L_max_landing = 2.1  # CL_max for landing, estimate from Roskam (Table from Slide 11 in 06-PreliminarySizing_Part2.pdf)
 landing_W_S = 0.5 * rho_SL * V_approach**2 * C_L_max_landing
 
@@ -66,8 +70,16 @@ rho_a2a = 0.000891  # slugs/ft^3 (air density at 30,000 ft)
 q = 1/2 * rho_a2a * V_dash_a2a**2
 e_dash = 0.8  # assuming clean config for dash
 
+# Sustained Turn Constraint
+V_turn = 548.538 # ft/s (325 knots) From Raymer of estimated sustained turn speed for fighter aircraft
+phi = 8 # deg/s turn rate, RFP
+n = np.sqrt(((phi*(np.pi/180))*V_turn/g)**2 + 1) # load factor for sustained turn 
+q_turn = 0.5 * rho_20000 * V_turn**2 # turning dynamic pressure at 20,000 ft
+turn_coeff1 = q * C_D_0_calc 
+turn_coeff2 = n**2 / (q * np.pi * AR * e_dash)
+
 # WS Plot
-WS = np.linspace(1,300,30)
+WS = np.linspace(1,150,300)
 
 TW_takeoff = takeoff_W_S
 # TW_landing = (rho_landing_rhoSL * C_L_max_takeoff) / (80 * Wl_Wto) * (s_land + s_a) * np.ones(30)
@@ -75,6 +87,7 @@ TW_landing = landing_W_S
 print("TW_Landing:", TW_landing)
 TW_takeoff_climb = coef_1_climb * np.ones(len(WS))
 TW_approach_climb = coef_2_climb * np.ones(len(WS))
+TW_turn = turn_coeff1*(1/WS) + turn_coeff2 * WS
 TW_cruise = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
 
 plt.figure(figsize=(8,4))
@@ -84,11 +97,11 @@ plt.ylabel("T/W")
 plt.plot(WS, TW_takeoff_climb, label='Takeoff Climb Constraint', linestyle='-', linewidth=2)
 plt.plot(WS, TW_approach_climb, label='Approach Climb Constraint', linestyle='-', linewidth=2)
 plt.plot(WS, TW_cruise, label='Cruise Constraint', linestyle='-', linewidth=2)
-
+plt.plot(WS, TW_turn, label='Sustained Turn Constraint', linestyle='-', linewidth=2)
 ymin, ymax = plt.ylim()
 plt.vlines(TW_takeoff, ymin, ymax, label='Takeoff Constraint', colors='blue', linewidth=2)
 plt.vlines(TW_landing, ymin, ymax, label='Landing Constraint', colors='orange', linewidth=2)
-# plt.ylim(0, 0.5)
+plt.ylim(0, 1.5)
 plt.legend(loc='best')
 plt.show()
 plt.close()
