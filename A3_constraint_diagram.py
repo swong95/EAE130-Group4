@@ -93,7 +93,17 @@ TW_turn = turn_coeff1*(1/WS) + turn_coeff2 * WS
 TW_cruise_a2a = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
 TW_cruise_strike = (V_dash_strike * C_D_0_calc) / WS + (WS) / (V_dash_strike * np.pi * AR * e_dash)
 
-plt.figure(figsize=(8,4))
+plt.figure(figsize=(14,8))
+
+plt.rcParams.update({
+    "font.size": 14,
+    "axes.labelsize": 16,
+    "axes.titlesize": 18,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
+    "legend.fontsize": 12
+})
+
 plt.title('T/W - W/S')
 plt.xlabel("W/S $(lb/ft^2)$")
 plt.ylabel("T/W")
