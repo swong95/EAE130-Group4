@@ -107,5 +107,76 @@ plt.vlines(TW_takeoff, ymin, ymax, label='Takeoff Constraint', colors='blue', li
 plt.vlines(TW_landing, ymin, ymax, label='Landing Constraint', colors='orange', linewidth=2)
 plt.ylim(0, 1.5)
 plt.legend(loc='best')
+
+# ----- Shading feasible region -----
+WS_max = min(takeoff_W_S, landing_W_S)     # most restrictive vertical constraint
+TW_req = np.maximum.reduce([
+    TW_takeoff_climb,
+    TW_approach_climb,
+    TW_cruise_a2a,
+    TW_cruise_strike,
+    TW_turn
+])
+
+# Make sure ylim is set before shading so we know the top fill boundary
+plt.ylim(0, 1.5)
+y_top = plt.ylim()[1]
+
+feasible_mask = (WS <= WS_max) & (TW_req <= y_top)
+
+plt.fill_between(
+    WS, TW_req, y_top,
+    where=feasible_mask,
+    alpha=0.18,
+    label='Feasible Design Space'
+)
+
+# ----- F/A-18 Super Hornet design point -----
+WS_f18 = 127.0   # lb/ft^2
+TW_f18 = 0.93
+
+plt.scatter(
+    WS_f18,
+    TW_f18,
+    s=120,
+    marker='*',
+    color='black',
+    zorder=5,
+    label='F/A-18E/F Super Hornet'
+)
+
+plt.annotate(
+    'F/A-18E/F',
+    (WS_f18, TW_f18),
+    textcoords="offset points",
+    xytext=(8,8),
+    fontsize=9
+)
+# ----- Our chosen design point -----
+WS_design = 72.3
+TW_design = 0.33
+
+plt.scatter(
+    WS_design,
+    TW_design,
+    s=110,
+    marker='o',
+    color='red',
+    zorder=6,
+    label='Chosen Design'
+)
+
+plt.annotate(
+    'Chosen Design Point',
+    (WS_design, TW_design),
+    textcoords="offset points",
+    xytext=(8,-12),
+    fontsize=9
+)
+
+plt.legend(loc='best')
+
+plt.legend(loc='best')
+
 plt.show()
 plt.close()

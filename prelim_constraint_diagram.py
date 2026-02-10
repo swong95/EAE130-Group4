@@ -97,4 +97,29 @@ plt.xlim(0, 250)
 plt.legend(loc='upper right', frameon=True, shadow=True, fontsize='small')
 
 plt.tight_layout()
+
+# ----- F/A-18 Super Hornet design point -----
+WS_f18 = 127.0   # lb/ft^2
+TW_f18 = 0.93
+
+plt.scatter(
+    WS_f18,
+    TW_f18,
+    s=120,
+    marker='*',
+    color='black',
+    zorder=5,
+    label='F/A-18E/F Super Hornet'
+)
+
+plt.annotate(
+    'F/A-18E/F',
+    (WS_f18, TW_f18),
+    textcoords="offset points",
+    xytext=(8,8),
+    fontsize=9
+)
+plt.legend(loc='best')
 plt.show()
+
+
