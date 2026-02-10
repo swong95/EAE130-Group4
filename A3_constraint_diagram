@@ -34,8 +34,9 @@ print("Takeoff Wing Loading Constraint (W/S): " + str(round(takeoff_W_S, 2)) + "
 
 # Landing Field Length Constraint
 V_approach = 244.732/1.2  # ft/s (145 knots)
+V_arrest = 1.05 * V_approach # ft/s, estimated from RFP as 5% higher than approach speed
 C_L_max_landing = 2.1  # CL_max for landing, estimate from Roskam (Table from Slide 11 in 06-PreliminarySizing_Part2.pdf)
-landing_W_S = 0.5 * rho_SL * V_approach**2 * C_L_max_landing
+landing_W_S = 0.5 * rho_SL * V_arrest**2 * C_L_max_landing
 
 # old assumptions
 # s_land = (V_approach**2) / (2 * 32.2 * (0.3))  # landing distance requirement from FAR (ft)
