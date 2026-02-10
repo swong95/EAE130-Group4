@@ -105,3 +105,16 @@ plt.ylim(0, 1.5)
 plt.legend(loc='best')
 plt.show()
 plt.close()
+
+
+# Picking Design Point
+
+
+# Takeoff Distance Check
+
+
+
+# Landing Distance Check
+# Arresting Gear
+C_L_max = 
+V_stall= np.sqrt(2*W_to / (rho_SL * s_ref * C_L_max))
