@@ -77,8 +77,8 @@ V_turn = 548.538 # ft/s (325 knots) From Raymer of estimated sustained turn spee
 phi = 8 # deg/s turn rate, RFP
 n = np.sqrt(((phi*(np.pi/180))*V_turn/g)**2 + 1) # load factor for sustained turn 
 q_turn = 0.5 * rho_20000 * V_turn**2 # turning dynamic pressure at 20,000 ft
-turn_coeff1 = q * C_D_0_calc 
-turn_coeff2 = n**2 / (q * np.pi * AR * e_dash)
+turn_coeff1 = q_turn * C_D_0_calc 
+turn_coeff2 = n**2 / (q_turn * np.pi * AR * e_dash)
 
 # WS Plot
 WS = np.linspace(1,150,300)
