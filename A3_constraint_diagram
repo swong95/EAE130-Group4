@@ -25,7 +25,7 @@ C_D_0_calc = c_f * (S_wet / s_ref)
 # Takeoff Constraint 
 # Using catapult constraints for takeoff to determine takeoff velocity -> determine upper bound of wing loading for takeoff constraint
 
-C_L_max_takeoff = 1.7  # CL_max for takeoff, estimate from Roskam (Table from Slide 11 in 06-PreliminarySizing_Part2.pdf)
+C_L_max_takeoff = 2  # CL_max for takeoff, estimate from Roskam (Table from Slide 11 in 06-PreliminarySizing_Part2.pdf)
 V_takeoff = 130 # knots, estimated from catapult diagram assuming MTOW = 70,000 lb and catapult energy level of 200
 V_takeoff = V_takeoff * 1.6878 # convert to ft/s
 # Using stall condition to determine upper bound of wingloading for takeoff constraint
@@ -49,7 +49,7 @@ landing_W_S = 0.5 * rho_SL * V_approach**2 * C_L_max_landing
 k_s_to = 1.2
 k_s_approach = 1.1 
 C_D_0 = 0.01288
-W_to = 31255.0 # lbs
+W_to = 70000.0 # lbs
 SEROC_to = 200 # ft/min
 SEROC_approach = 500 # ft/min
 Vs_to = np.sqrt(2*W_to / (rho_SL * s_ref * C_L_max_takeoff))
@@ -64,8 +64,9 @@ print("Climb gradient coefficient:", coef_1_climb)
 
 # Cruise / Dash
 # Using dash speed for air to air mission since assignment asks for dash speed
-V_dash_a2a = 589*1.6 ## knots (Speed) [Using Ma = 1.6 at 30,000 ft dash speed for Air to Air Combat]
-                     ## Speed of soud pulled from Engineers Edge Table for 30,000 ft
+V_dash_a2a = 589* 1.6878*1.6 ## ft/s (Speed) [Using Ma = 1.6 at 30,000 ft dash speed for Air to Air Combat]
+                     ## Speed of soud pulled from Engineers Edge Table for 30,000 
+V_dash_strike = 589* 1.6878*.85 ## ft/s (Speed) [Using Ma = .85 dash speed for Strike]
 rho_a2a = 0.000891  # slugs/ft^3 (air density at 30,000 ft)
 q = 1/2 * rho_a2a * V_dash_a2a**2
 e_dash = 0.8  # assuming clean config for dash
@@ -88,7 +89,8 @@ print("TW_Landing:", TW_landing)
 TW_takeoff_climb = coef_1_climb * np.ones(len(WS))
 TW_approach_climb = coef_2_climb * np.ones(len(WS))
 TW_turn = turn_coeff1*(1/WS) + turn_coeff2 * WS
-TW_cruise = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
+TW_cruise_a2a = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
+TW_cruise_strike = (V_dash_strike * C_D_0_calc) / WS + (WS) / (V_dash_strike * np.pi * AR * e_dash)
 
 plt.figure(figsize=(8,4))
 plt.title('T/W - W/S')
@@ -96,7 +98,8 @@ plt.xlabel("W/S $(lb/ft^2)$")
 plt.ylabel("T/W")
 plt.plot(WS, TW_takeoff_climb, label='Takeoff Climb Constraint', linestyle='-', linewidth=2)
 plt.plot(WS, TW_approach_climb, label='Approach Climb Constraint', linestyle='-', linewidth=2)
-plt.plot(WS, TW_cruise, label='Cruise Constraint', linestyle='-', linewidth=2)
+plt.plot(WS, TW_cruise_a2a, label='Cruise Constraint (Air to Air)', linestyle='-', linewidth=2)
+plt.plot(WS, TW_cruise_strike, label='Cruise Constraint (Strike)', linestyle='-', linewidth=2)
 plt.plot(WS, TW_turn, label='Sustained Turn Constraint', linestyle='-', linewidth=2)
 ymin, ymax = plt.ylim()
 plt.vlines(TW_takeoff, ymin, ymax, label='Takeoff Constraint', colors='blue', linewidth=2)
