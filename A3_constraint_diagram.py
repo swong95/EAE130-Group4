@@ -180,3 +180,35 @@ plt.legend(loc='best')
 
 plt.show()
 plt.close()
+
+# Design point
+TW_design = 0.328
+WS_design = 72.30 # lbf/ft^2
+
+# Takeoff Distance Check
+
+
+
+# Landing Distance Check
+# Arresting Gear
+C_L_max = 1.8
+V_stall= np.sqrt(2*W_to / (rho_SL * s_ref * C_L_max))
+design_point_takeoff_weight = WS_design * s_ref
+landing_weight = 0.78 * design_point_takeoff_weight # Landing to Takeoff weight ratio from lecture 6 slide 39
+# landing weight roughly ~= 51500 lbs
+V_arrest_engage = V_stall*1.15
+print("Stall Speed (ft/s): ", V_stall)
+print("Landing Engagement Speed (ft/s): ", V_arrest_engage)
+print("Landing Engagement Speed (kts): ", V_arrest_engage * 0.592484)
+
+Force_hook = 150000
+Force_hook_avg = 0.8 * Force_hook # Constant Force Assumption
+
+# Distance Calculation
+landing_distance = ((landing_weight/g)*V_arrest_engage**2)/(2*Force_hook_avg)
+print("Landing Distance (ft): ", landing_distance)
+nimitz_landing_field_length = 700 #ft
+if landing_distance < nimitz_landing_field_length:
+    print("Arresting gear succesfully stops aircraft")
+else:
+    print("Aircraft falls off carrier during landing")
