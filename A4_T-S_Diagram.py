@@ -274,8 +274,7 @@ else:
     print("Aircraft falls off carrier during landing")
 
 # ***************************A4 CODE START *********************************
-
-# Outer Loop
+# Based on A3_final_submission.py (All code above)
 
 
 # Inner Loop: For fixed S and T, find W_0
@@ -374,5 +373,3 @@ def inner_loop_weight(TOGW_guess, S_wing, S_ht, S_vt,
     converged = (delta <= err)
     return TOGW_guess, converged, it, np.array(W0_history)
 # End Inner Loop
-
-
