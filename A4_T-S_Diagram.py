@@ -275,6 +275,9 @@ else:
 
 # ***************************A4 CODE START *********************************
 
+# Outer Loop
+
+
 # Inner Loop: For fixed S and T, find W_0
 """
 Inputs:
@@ -286,4 +289,22 @@ W_crew: crew weight [lbm or slug]
 Outputs:
 W_0_converged: Converged gross takeoff weight
 """
+def calculate_engine_weight(T_0):
+    """
+    Given: single-engine thrust (T_0) [lbf]
+    Find: single engine weight estimate (W_eng) [lbm]
+    """
+    W_eng_dry = = 0.521 * T_0**0.9
+    W_eng_oil = 0.082 * T_0**0.65
+    W_eng_rev = 0.034 * T_0
+    W_eng_control = 0.26 * T_0**0.5
+    W_eng_start = 9.33 * (W_eng_dry/1000) ** 1.078
+    W_eng = W_eng_dry + W_eng_oil + W_eng_rev + W_eng_control + W_eng_start
+    return W_eng
+
+def calculate_empty_weight(S_wing, S_ht, S_vt, S_wet_fuselage, TOGW, T_0, num_eng):
+    
+
+# End Inner Loop
+
 
