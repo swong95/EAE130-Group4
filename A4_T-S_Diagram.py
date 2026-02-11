@@ -303,8 +303,76 @@ def calculate_engine_weight(T_0):
     return W_eng
 
 def calculate_empty_weight(S_wing, S_ht, S_vt, S_wet_fuselage, TOGW, T_0, num_eng):
-    
+    W_wing = S_wing * 9 # From Roskam Weight Model Table - 9x multiplier
+    W_ht = S_ht * 4
+    W_vt = S_vt * 5.3
+    W_fuselage = S_wet_fuselage * 4.8
+    W_landing_gear = TOGW *0.045 # Landing Gear - Navy
+    single_engine_weight = calculate_engine_weight(T_0)
+    W_engines = single_engine_weight * num_eng * 1.3
+    W_all_else = TOGW * 0.17
+    W_empty = W_wing + W_ht + W_vt + W_fuselage + W_landing_gear + W_engines + W_all_else
+    return W_empty
 
+def calculate_weight_fraction(L_D_max, R, E, c, V):
+    """This function calculates the weight fractions for cruise and loiter/descent phases based on the Breguet range and endurance equations, and also other terms.
+    Args:
+        L_D_max (float): Maximum lift-to-drag ratio of the aircraft.
+        R (float): Range in nautical miles.
+        E (float): Endurance in hours.
+        c (float): Specific fuel consumption in lb/(lbf hr).
+        V (float): Velocity in knots."""
+    L_D = 0.94 * L_D_max
+
+    W3_W2 = np.exp((-R*c) / (V*L_D))  # cruise
+    # print("Cruise Fuel Fraction (W3/W2): " + str(round(W3_W2, 3)))
+
+    W4_W3 = np.exp((-E*c) / (L_D))    # loiter/descent
+    # print("Loiter Fuel Fraction (W4/W3): " + str(round(W4_W3, 3)))
+
+    W1_W0 = 0.970   # engine start & takeoff
+    W2_W1 = 0.985   # climb
+    W5_W4 = 0.995   # landing
+
+    W5_W0 = W5_W4 * W4_W3 * W3_W2 * W2_W1 * W1_W0
+    # print("Final Fuel Fraction (W5/W0): " + str(round(W5_W0, 3)))
+
+    Wf_W0 = (1 - W5_W0) * 1.06    # compute fuel fraction
+    # print("Total Fuel Fraction Wf/W0: {:.3f}".format(Wf_W0))
+
+    return Wf_W0
+
+def inner_loop_weight(TOGW_guess, S_wing, S_ht, S_vt, 
+                      S_wet_fuselage, num_eng, W_crew, 
+                      W_payload, T_0, err=1e-6, max_iter=200):
+    
+    W0_history = []
+    delta = np.inf
+    it = 0
+    while delta > err and it < max_iter:
+        # 1) fuel fraction (could be constant or updated)
+        Wf_W0 = calculate_weight_fraction(L_D_max, R, E, c, V)
+        W_fuel = Wf_W0 * TOGW_guess
+
+        # 2) empty weight based on current TOGW guess + geometry + thrust
+        W_empty = calculate_empty_weight(
+            S_wing, S_ht, S_vt, S_wet_fuselage,
+            TOGW_guess, T_0, num_engines
+        )
+
+        # 3) new gross weight
+        W0_new = W_empty + w_crew + w_payload + W_fuel
+        W0_history.append(W0_new)
+
+        # 4) convergence check
+        delta = abs(W0_new - TOGW_guess) / max(abs(W0_new), 1e-9)
+
+        # 5) update
+        TOGW_guess = W0_new
+        it += 1
+
+    converged = (delta <= err)
+    return TOGW_guess, converged, it, np.array(W0_history)
 # End Inner Loop
 
 
