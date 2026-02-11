@@ -272,3 +272,18 @@ if landing_distance < nimitz_landing_field_length:
     print("Arresting gear succesfully stops aircraft")
 else:
     print("Aircraft falls off carrier during landing")
+
+# ***************************A4 CODE START *********************************
+
+# Inner Loop: For fixed S and T, find W_0
+"""
+Inputs:
+S: Wing Area [ft^2]
+T: Thrust [lbf] or per Engine Thrust: T_0 = T/n_eng
+W_payload: payload weight [lbm or slug]
+W_crew: crew weight [lbm or slug]
+
+Outputs:
+W_0_converged: Converged gross takeoff weight
+"""
+
