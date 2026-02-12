@@ -411,44 +411,43 @@ W_payload = W_payload_strike
 print("W_payload used for weight estimate: " + str(W_payload) + " lb")
 
 # # Our Design Point Parameters
-# L_D_max = 9             # LOOK AT FIG 3.5 FROM RAYMER TO ESTIMATE L/D MAX BASED ON WETTED AREA ASPECT RATIO
-#                         ## Using F-15 as reference id using extrapolation try 10.5 FIG 2.4 FROM Martins
-# L_D = 0.866 * L_D_max   # 86.6% of L/D_max is typical estimate for jets at cruise (pg 43 of Raymer)
+L_D_max = 9             # LOOK AT FIG 3.5 FROM RAYMER TO ESTIMATE L/D MAX BASED ON WETTED AREA ASPECT RATIO
+                        ## Using F-15 as reference id using extrapolation try 10.5 FIG 2.4 FROM Martins
+L_D = 0.866 * L_D_max   # 86.6% of L/D_max is typical estimate for jets at cruise (pg 43 of Raymer)
 
-# # Mission Parameters
-# R = 700*2                 # nmi (Range) [RFP requests 200 nmi combat radius]
-# E = 20 / 60             # min --> hr (Endurance) [RFP requests 20 min loiter time minimum for landing]
-# c = 0.8                 # lb/(lbf hr) (Specific Fuel Consumption) [From Raymer Table 3.3 - Current Super Hornet uses a low bypass turbofan]
-# V = 589 * 0.85          # knots (Speed) [Assuming Ma =0.85 cruise speed from "Intermediate Thrust" in Strike section of RFP]
-#                         ## Speed of soud pulled from Engineers Edge Table for 30,000 ft
+# Mission Parameters
+R = 700*2                 # nmi (Range) [RFP requests 200 nmi combat radius]
+E = 20 / 60             # min --> hr (Endurance) [RFP requests 20 min loiter time minimum for landing]
+c = 0.8                 # lb/(lbf hr) (Specific Fuel Consumption) [From Raymer Table 3.3 - Current Super Hornet uses a low bypass turbofan]
+V = 589 * 0.85          # knots (Speed) [Assuming Ma =0.85 cruise speed from "Intermediate Thrust" in Strike section of RFP]
+                        ## Speed of soud pulled from Engineers Edge Table for 30,000 ft
 
-# S_ht = 0 # Replace with actual horizontal tail area from CAD model
-# S_vt = 136 # Replace with actual vertical tail area from CAD model
-# S_wet_fuselage = 687 # Replace with actual wetted area of fuselage from CAD model
-# num_engines = 2  # Example number of engines
+S_ht = 0 # Replace with actual horizontal tail area from CAD model
+S_vt = 136 # Replace with actual vertical tail area from CAD model
+S_wet_fuselage = 687 # Replace with actual wetted area of fuselage from CAD model
+num_engines = 2  # Example number of engines
+# The value we can adjust by the constraint curve. For example, if we want to be on the takeoff constraint curve, we can find the corresponding W/S and then calculate the TOGW based on that W/S and the wing area.
+S_wing = 1050
+T_0 = 93700  # Example value for thrust per engine
 
-# # The value we can adjust by the constraint curve. For example, if we want to be on the takeoff constraint curve, we can find the corresponding W/S and then calculate the TOGW based on that W/S and the wing area.
-# S_wing = 1050
-# T_0 = 93700  # Example value for thrust per engine
+TOGW_guess = 500000  # Initial guess for Takeoff Gross Weight in pounds
+final_TOGW, converged, iterations, W0_history = inner_loop_weight(
+    TOGW_guess,
+    S_wing, S_ht, S_vt, S_wet_fuselage,
+    num_engines, W_crew, W_payload, T_0
+)
 
-# TOGW_guess = 500000  # Initial guess for Takeoff Gross Weight in pounds
-# final_TOGW, converged, iterations, W0_history = inner_loop_weight(
-#     TOGW_guess,
-#     S_wing, S_ht, S_vt, S_wet_fuselage,
-#     num_engines, W_crew, W_payload, T_0
-# )
+# Checks that convergence works for TOGW estimation
 
-# # Checks that convergence works for TOGW estimation
-
-# # plot the convergence history
-# plt.figure(figsize=(10,6))
-# plt.plot(W0_history, marker='o')
-# plt.title('Convergence of TOGW Estimate')
-# plt.xlabel('Iteration')
-# plt.ylabel('Estimated TOGW (lb)')
-# plt.grid()
-# plt.show()
-# print("Final estimated TOGW:", final_TOGW, "lb")
+# plot the convergence history
+plt.figure(figsize=(10,6))
+plt.plot(W0_history, marker='o')
+plt.title('Convergence of TOGW Estimate')
+plt.xlabel('Iteration')
+plt.ylabel('Estimated TOGW (lb)')
+plt.grid()
+plt.show()
+print("Final estimated TOGW:", final_TOGW, "lb")
 # ## END OF BOEING TEST CODE
 
 ## THRUST CONVERGENCE (OUTER LOOP)
@@ -548,7 +547,7 @@ S_wet_fuselage = 687 # Replace with actual wetted area of fuselage from CAD mode
 num_engines = 2  # Example number of engines
 
 # Set grid of wing areas to analyze
-S_wing_grid = list(range(500, 6000, 2))  # Example range of wing areas to analyze
+S_wing_grid = list(range(358, 6000, 2))  # Example range of wing areas to analyze
 
 TOGW_guess_init = 500000  # Initial guess for Takeoff Gross Weight in pounds
 T_total_guess_init = 15000 * num_engines  # Initial guess for total thrust in pounds-force
