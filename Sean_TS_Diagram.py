@@ -289,11 +289,11 @@ def calculate_engine_weight(T_0):
     return W_eng
 
 def calculate_empty_weight(S_wing, S_ht, S_vt, S_wet_fuselage, TOGW, T_0 , num_engines):
-    W_wing = S_wing * 10
-    W_ht = S_ht * 5.5
-    W_vt = S_vt * 5.5
-    W_fuselage = S_wet_fuselage * 5
-    W_landing_gear = 0.043 * TOGW
+    W_wing = S_wing * 9
+    W_ht = S_ht * 4
+    W_vt = S_vt * 5.3
+    W_fuselage = S_wet_fuselage * 4.8
+    W_landing_gear = 0.045 * TOGW
     Engine_weight = calculate_engine_weight(T_0)
     W_engines = Engine_weight * num_engines * 1.3
     W_all_else = 0.17 * TOGW
