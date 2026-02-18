@@ -662,6 +662,16 @@ print('Outer loop never iterated more than ',max(n_iter_T), ' times, which is le
 # Plot the resulting T vs S curve from the outer loop convergence
 T_actual_F18 = .93*127*500
 S_actual_F18 = 500
+
+T_F22 = 70000
+S_F22 = 840
+
+T_F14 = 53900
+S_F14 = 565
+
+T_F18_CD = 35500
+S_F18_CD = 410
+
 print(f'Actual T for F-18: {T_actual_F18} lbf, Actual S for F-18: {S_actual_F18} ft^2')
 
 plt.figure(figsize=(16,7))
@@ -669,6 +679,9 @@ plt.title('Converged T vs S for Approach Climbing Constraint')
 plt.xlabel("Wing Area S (ft^2)")
 plt.ylabel("Total Thrust T (lbf)")
 plt.plot(S_actual_F18, T_actual_F18, label='Actual F/A-18 E/F Super Hornet', marker='x', markersize=10, color='red')
+plt.plot(S_F22,T_F22, label = 'Lockheed Martin F-22A Raptor', marker = 'x', markersize=10,color='blue')
+plt.plot(S_F14,T_F14, label = 'Grumman F-14 Tomcat', marker = 'x', markersize=10,color='green')
+plt.plot(S_F18_CD,T_F18_CD, label = 'F/A-18 C/D Hornet', marker = 'x', markersize=10,color='orange')
 plt.plot(S_wing_grid, T_approach_climb_curve, label='Approach Climb Constraint')
 plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb Constraint')
 plt.plot(S_wing_grid, T_turn_curve, label = 'Turn Constraint')
