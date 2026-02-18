@@ -452,7 +452,13 @@ def outer_loop_thrust_for_one_constraint(
             if type == 1:
                 TW_req = T_W_coef_1
             elif type == 2:
-                TW_req = T_W_coef_1 / WS
+                WS_limit = T_W_coef_1
+                W0_limit = WS_limit * S_wing
+
+                TW_design = T_W_coef_2
+                TW_req = TW_design
+
+                W0 = W0_limit
             elif type == 3:
                 TW_req = T_W_coef_1 / WS + T_W_coef_2 * WS
             
@@ -612,6 +618,8 @@ T_strike_cruise_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, i
     relax=1
 )
 
+takeoff_coeff_1 = takeoff_W_S
+TW_design = 0.35
 T_takeoff_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
     S_wing_grid=S_wing_grid,
     TOGW_guess_init=TOGW_guess_init,
@@ -620,8 +628,24 @@ T_takeoff_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_fi
     S_ht=S_ht, S_vt=S_vt, S_wet_fuselage=S_wet_fuselage,
     W_crew=W_crew, W_payload=W_payload_a2a,
     type = 2,
-    T_W_coef_1 = T_W_takeoff_climb,
-    T_W_coef_2 = 0,
+    T_W_coef_1 = takeoff_coeff_1,
+    T_W_coef_2 = TW_design,
+    tol_T_rel=1e-6,
+    max_iter_T=200,
+    relax=1
+)
+
+landing_coeff_1 = landing_W_S
+T_landing_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
+    S_wing_grid=S_wing_grid,
+    TOGW_guess_init=TOGW_guess_init,
+    T_total_guess_init=T_total_guess_init,
+    num_engines=num_engines,
+    S_ht=S_ht, S_vt=S_vt, S_wet_fuselage=S_wet_fuselage,
+    W_crew=W_crew, W_payload=W_payload_a2a,
+    type = 2,
+    T_W_coef_1 = landing_coeff_1,
+    T_W_coef_2 = TW_design,
     tol_T_rel=1e-6,
     max_iter_T=200,
     relax=1
@@ -650,6 +674,8 @@ plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb Constraint')
 plt.plot(S_wing_grid, T_turn_curve, label = 'Turn Constraint')
 plt.plot(S_wing_grid, T_a2a_cruise_curve, label = 'Air-to-Air Dash Constraint')
 plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
+plt.plot(S_wing_grid, T_takeoff_curve, label = 'Takeoff Constraint')
+plt.plot(S_wing_grid, T_landing_curve, label = 'Landing Constraint')
 plt.legend(loc='best')
 plt.grid()
 plt.show()
