@@ -629,7 +629,7 @@ T_takeoff_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_fi
 
 
 # ============================================================
-# LANDING LENGTH CONSTRAINT  (Kevin — edit/remove this block)
+# LANDING LENGTH CONSTRAINT  (Kevin — edit this block)
 # ============================================================
 # The landing constraint limits wing loading at touchdown:
 #   W_land / S  <=  landing_W_S
@@ -712,7 +712,9 @@ plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb Constraint')
 plt.plot(S_wing_grid, T_turn_curve, label = 'Turn Constraint')
 plt.plot(S_wing_grid, T_a2a_cruise_curve, label = 'Air-to-Air Dash Constraint')
 plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
-plt.plot(S_landing_curve, T_landing_valid, label='Landing Constraint', linewidth=2)  # Kevin — landing line
+plt.plot(S_landing_curve, T_landing_valid, label='Landing Constraint', linewidth=2)  # landing line
+plt.xlim(0, 2000)   # realistic wing area range for a fighter (ft^2); F/A-18 is 500 ft^2
+plt.ylim(0, 80000) # realistic total thrust range (lbf); adjust if curves are cut off
 plt.legend(loc='best')
 plt.grid()
 plt.show()
