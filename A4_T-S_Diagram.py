@@ -527,7 +527,7 @@ S_wet_fuselage = 687
 num_engines = 2
 
 # Set grid of wing areas to analyze
-S_wing_grid = list(range(0, 6000, 1))  # Example range of wing areas to analyze
+S_wing_grid = list(range(0, 1000, 1))  # Example range of wing areas to analyze
 
 TOGW_guess_init = 70000  # Initial guess for Takeoff Gross Weight in pounds
 T_total_guess_init = 15000 * num_engines  # Initial guess for total thrust in pounds-force
@@ -664,7 +664,7 @@ T_actual_F18 = .93*127*500
 S_actual_F18 = 500
 print(f'Actual T for F-18: {T_actual_F18} lbf, Actual S for F-18: {S_actual_F18} ft^2')
 
-plt.figure(figsize=(16,9))
+plt.figure(figsize=(16,7))
 plt.title('Converged T vs S for Approach Climbing Constraint')
 plt.xlabel("Wing Area S (ft^2)")
 plt.ylabel("Total Thrust T (lbf)")
