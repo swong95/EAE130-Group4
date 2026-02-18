@@ -628,6 +628,68 @@ T_takeoff_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_fi
 )
 
 
+# ============================================================
+# LANDING LENGTH CONSTRAINT  (Kevin — edit/remove this block)
+# ============================================================
+# The landing constraint limits wing loading at touchdown:
+#   W_land / S  <=  landing_W_S
+# where W_land = Wl_W0 * W0 (landing weight as a fraction of TOGW).
+#
+# Unlike the other constraints, landing does NOT constrain T/W —
+# it constrains S for a given W0.  So we sweep over thrust values
+# (T_landing_grid) and, for each T, find the minimum S that keeps
+# the landing wing loading within limits.
+#
+# Because W0 depends on S (through wing weight in the empty-weight
+# model), we iterate a small inner loop until S and W0 are mutually
+# consistent on the landing boundary: S = W0 * Wl_W0 / landing_W_S
+
+Wl_W0 = 0.78        # landing-to-TOGW weight ratio (matches line 265)
+max_land_iter = 100  # maximum iterations for the S–W0 consistency loop
+land_s_tol = 1e-5    # convergence tolerance on S (relative)
+
+# Range of thrust values to sweep — adjust endpoints if the curve
+# doesn't cover the region of interest on the plot
+T_landing_grid = np.linspace(5000, 120000, 500)
+
+S_landing_curve = []  # minimum S at each thrust level
+T_landing_valid  = []  # thrust values for which the loop converged
+
+for T_total_land in T_landing_grid:
+    T_0_land = T_total_land / num_engines
+
+    # Start the S guess at the reference wing area
+    S_guess = s_ref
+
+    wconv_land = False
+    for _ in range(max_land_iter):
+        # Evaluate W0 for this (S_guess, T) using the existing inner loop
+        W0_land, wconv_land, _, _ = inner_loop_weight(
+            TOGW_guess_init,
+            S_guess, S_ht, S_vt, S_wet_fuselage,
+            num_engines, W_crew, W_payload_a2a, T_0_land
+        )
+
+        # Landing boundary condition: S such that W_land / S = landing_W_S
+        S_new = W0_land * Wl_W0 / landing_W_S
+
+        # Check convergence on S
+        if abs(S_new - S_guess) / max(S_guess, 1e-9) < land_s_tol:
+            S_guess = S_new
+            break
+
+        S_guess = S_new  # update and repeat
+
+    # Only keep points where the weight inner loop also converged
+    if wconv_land:
+        S_landing_curve.append(S_guess)
+        T_landing_valid.append(T_total_land)
+
+S_landing_curve = np.array(S_landing_curve)
+T_landing_valid  = np.array(T_landing_valid)
+# ============================================================
+# END LANDING LENGTH CONSTRAINT
+# ============================================================
 
 
 
@@ -650,6 +712,7 @@ plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb Constraint')
 plt.plot(S_wing_grid, T_turn_curve, label = 'Turn Constraint')
 plt.plot(S_wing_grid, T_a2a_cruise_curve, label = 'Air-to-Air Dash Constraint')
 plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
+plt.plot(S_landing_curve, T_landing_valid, label='Landing Constraint', linewidth=2)  # Kevin — landing line
 plt.legend(loc='best')
 plt.grid()
 plt.show()
