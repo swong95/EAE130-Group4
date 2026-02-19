@@ -629,7 +629,7 @@ T_takeoff_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_fi
 
 
 # ============================================================
-# LANDING LENGTH CONSTRAINT  (Kevin — edit this block)
+# LANDING LENGTH CONSTRAINT  (Kevin — fix this block)
 # ============================================================
 # The landing constraint limits wing loading at touchdown:
 #   W_land / S  <=  landing_W_S
@@ -691,6 +691,12 @@ T_landing_valid  = np.array(T_landing_valid)
 # END LANDING LENGTH CONSTRAINT
 # ============================================================
 
+# A3 Design Point
+TW_design = 0.328
+WS_design = 72.30 # lbf/ft^2
+
+T_design = TW_design * 66000
+S_design = 66000 / WS_design
 
 
 # Deciding if loops converged or not
@@ -702,11 +708,15 @@ T_actual_F18 = .93*127*500
 S_actual_F18 = 500
 print(f'Actual T for F-18: {T_actual_F18} lbf, Actual S for F-18: {S_actual_F18} ft^2')
 
+T_design_twinF414 = T_design # 22,000 lbf per GE F-414-400
+S_design_twinF414 = S_design
+
 plt.figure(figsize=(16,9))
 plt.title('Converged T vs S for Approach Climbing Constraint')
 plt.xlabel("Wing Area S (ft^2)")
 plt.ylabel("Total Thrust T (lbf)")
 plt.plot(S_actual_F18, T_actual_F18, label='Actual F/A-18 E/F Super Hornet', marker='x', markersize=10, color='red')
+plt.plot(S_design_twinF414, T_design_twinF414, label='F/A-XX Design Point', marker='x', markersize=10, color='red')
 plt.plot(S_wing_grid, T_approach_climb_curve, label='Approach Climb Constraint')
 plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb Constraint')
 plt.plot(S_wing_grid, T_turn_curve, label = 'Turn Constraint')
