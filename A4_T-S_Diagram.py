@@ -645,7 +645,6 @@ T_takeoff_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_fi
 #
 # Note: S scales with W0² (not linearly) — heavier aircraft land
 # faster, requiring more wing to keep the roll-out within deck length.
-# Values below match A3_final_submission.py lines 254–270.
 
 Wl_W0          = 0.78             # landing-to-TOGW weight ratio
 C_L_max_arr    = 1.8              # landing CL_max (arrestor condition)
