@@ -669,7 +669,83 @@ T_landing_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_fi
 )
 
 
+# ============================================================
+# LANDING LENGTH CONSTRAINT  (Kevin — edit/remove this block)
+# ============================================================
+# Carrier landing: the arrestor hook absorbs the aircraft's kinetic
+# energy and must stop it within the Nimitz deck length (700 ft).
+#
+# Work-energy theorem:
+#   d_land = (W_land/g * V_arrest²) / (2 * F_avg)  <=  d_max
+#
+# Where V_arrest = k_arr * V_stall and
+#   V_stall = sqrt(2 * W_land / (rho_SL * S * C_L_max_arr))
+#
+# Substituting V_stall and solving for S at the boundary:
+#   S_min = k_arr² * (Wl_W0 * W0)² / (g * rho_SL * C_L_max_arr * F_avg * d_max)
+#
+# Note: S scales with W0² (not linearly) — heavier aircraft land
+# faster, requiring more wing to keep the roll-out within deck length.
 
+Wl_W0          = 0.78             # landing-to-TOGW weight ratio
+C_L_max_arr    = 1.8              # landing CL_max (arrestor condition)
+Force_hook_avg = 0.8 * 150000     # lbf, average arrestor hook force
+d_max_land     = 700              # ft, Nimitz carrier deck length
+k_arr_land     = 1.15             # V_arrest = 1.15 * V_stall
+max_land_iter  = 100              # max iterations for S–W0 consistency loop
+land_s_tol     = 1e-5             # convergence tolerance on S (relative)
+
+# Range of thrust values to sweep — adjust endpoints if the curve
+# doesn't cover the region of interest on the plot
+T_landing_grid = np.linspace(5000, 120000, 500)
+
+S_landing_curve = []  # minimum S at each thrust level
+T_landing_valid  = []  # thrust values for which the loop converged
+
+for T_total_land in T_landing_grid:
+    T_0_land = T_total_land / num_engines
+
+    # Start the S guess at the reference wing area
+    S_guess = s_ref
+
+    wconv_land = False
+    for _ in range(max_land_iter):
+        # Evaluate W0 for this (S_guess, T) using the existing inner loop
+        W0_land, wconv_land, _, _ = inner_loop_weight(
+            TOGW_guess_init,
+            S_guess, S_ht, S_vt, S_wet_fuselage,
+            num_engines, W_crew, W_payload_a2a, T_0_land
+        )
+
+        # Arrestor gear boundary condition (derived above):
+        #   d_land = d_max  =>  S = k_arr² * W_land² / (g * rho_SL * C_L_max_arr * F_avg * d_max)
+        W_land = Wl_W0 * W0_land
+        S_new = (k_arr_land**2 * W_land**2) / (g * rho_SL * C_L_max_arr * Force_hook_avg * d_max_land)
+
+        # Check convergence on S
+        if abs(S_new - S_guess) / max(S_guess, 1e-9) < land_s_tol:
+            S_guess = S_new
+            break
+
+        S_guess = S_new  # update and repeat
+
+    # Only keep points where the weight inner loop also converged
+    if wconv_land:
+        S_landing_curve.append(S_guess)
+        T_landing_valid.append(T_total_land)
+
+S_landing_curve = np.array(S_landing_curve)
+T_landing_valid  = np.array(T_landing_valid)
+# ============================================================
+# END LANDING LENGTH CONSTRAINT
+# ============================================================
+
+# A3 Design Point
+TW_design = 0.328
+WS_design = 72.30 # lbf/ft^2
+
+T_design = TW_design * 66000
+S_design = 66000 / WS_design
 
 
 # Deciding if loops converged or not
@@ -677,6 +753,7 @@ print('Inner loop never iterated more than ',max(it_w_final), ' times, which is 
 print('Outer loop never iterated more than ',max(n_iter_T), ' times, which is less than the chosen max of 200 meaning the loop converged.')
 
 # Plot the resulting T vs S curve from the outer loop convergence
+T_actual_F18 = 44000
 T_actual_F18 = 44000
 S_actual_F18 = 500
 
@@ -688,20 +765,23 @@ S_F18_CD = 410
 
 print(f'Actual T for F-18: {T_actual_F18} lbf, Actual S for F-18: {S_actual_F18} ft^2')
 
-plt.figure(figsize=(16,7))
+T_design_twinF414 = T_design # 22,000 lbf per GE F-414-400
+S_design_twinF414 = S_design
+
+plt.figure(figsize=(16,9))
 plt.title('Converged T vs S for Approach Climbing Constraint')
 plt.xlabel("Wing Area S (ft^2)")
 plt.ylabel("Total Thrust T (lbf)")
 plt.plot(S_actual_F18, T_actual_F18, label='Actual F/A-18 E/F Super Hornet', marker='x', markersize=10, color='red')
-plt.plot(S_F14,T_F14, label = 'Grumman F-14 Tomcat', marker = 'x', markersize=10,color='green')
-plt.plot(S_F18_CD,T_F18_CD, label = 'F/A-18 C/D Hornet', marker = 'x', markersize=10,color='orange')
+plt.plot(S_design_twinF414, T_design_twinF414, label='F/A-XX Design Point', marker='x', markersize=10, color='blue')
 plt.plot(S_wing_grid, T_approach_climb_curve, label='Approach Climb Constraint')
 plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb Constraint')
 plt.plot(S_wing_grid, T_turn_curve, label = 'Turn Constraint')
 plt.plot(S_wing_grid, T_a2a_cruise_curve, label = 'Air-to-Air Dash Constraint')
 plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
-plt.plot(S_wing_grid, T_takeoff_curve, label = 'Takeoff Constraint')
-plt.plot(S_wing_grid, T_landing_curve, label = 'Landing Constraint')
-plt.legend(loc='upper left')
+plt.plot(S_landing_curve, T_landing_valid, label='Landing Constraint', linewidth=2)  # landing line
+plt.xlim(0, 1000)   # realistic wing area range for a fighter (ft^2); F/A-18 is 500 ft^2
+plt.ylim(0, 60000) # realistic total thrust range (lbf); adjust if curves are cut off
+plt.legend(loc='best')
 plt.grid()
 plt.show()
