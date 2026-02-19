@@ -443,8 +443,8 @@ def outer_loop_thrust_for_one_constraint(
             # Example for takeoff climb: TW_req = T_W_takeoff_climb
 
             # Type 2 refers to W/S driven constraints like takeoff and landing. These are the vertical lines
-            # on the T/W - W/S constraint diagram and are given as constants in terms of W/S. This likely requires
-            # a rewritten outer loop to find wing surface area, S instead of T like we already have.
+            # on the T/W - W/S constraint diagram and are given as constants in terms of W/S. By plugging in
+            # our design T/W, we can generate a constraint plot for this type of constraint.
             
             # Type 3 refers to T/W driven constraints like cruise/dash and turn. These are in the form of
             # TW_req = coef_1 / WS + coef_2 * WS.
@@ -660,11 +660,8 @@ print('Inner loop never iterated more than ',max(it_w_final), ' times, which is 
 print('Outer loop never iterated more than ',max(n_iter_T), ' times, which is less than the chosen max of 200 meaning the loop converged.')
 
 # Plot the resulting T vs S curve from the outer loop convergence
-T_actual_F18 = .93*127*500
+T_actual_F18 = 44000
 S_actual_F18 = 500
-
-T_F22 = 70000
-S_F22 = 840
 
 T_F14 = 53900
 S_F14 = 565
@@ -679,7 +676,6 @@ plt.title('Converged T vs S for Approach Climbing Constraint')
 plt.xlabel("Wing Area S (ft^2)")
 plt.ylabel("Total Thrust T (lbf)")
 plt.plot(S_actual_F18, T_actual_F18, label='Actual F/A-18 E/F Super Hornet', marker='x', markersize=10, color='red')
-plt.plot(S_F22,T_F22, label = 'Lockheed Martin F-22A Raptor', marker = 'x', markersize=10,color='blue')
 plt.plot(S_F14,T_F14, label = 'Grumman F-14 Tomcat', marker = 'x', markersize=10,color='green')
 plt.plot(S_F18_CD,T_F18_CD, label = 'F/A-18 C/D Hornet', marker = 'x', markersize=10,color='orange')
 plt.plot(S_wing_grid, T_approach_climb_curve, label='Approach Climb Constraint')
@@ -689,6 +685,6 @@ plt.plot(S_wing_grid, T_a2a_cruise_curve, label = 'Air-to-Air Dash Constraint')
 plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
 plt.plot(S_wing_grid, T_takeoff_curve, label = 'Takeoff Constraint')
 plt.plot(S_wing_grid, T_landing_curve, label = 'Landing Constraint')
-plt.legend(loc='best')
+plt.legend(loc='upper left')
 plt.grid()
 plt.show()
