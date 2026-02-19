@@ -35,21 +35,21 @@ cd_landing_no_gear = (CD0 + dCD0_lf) + (cl_landing_no_gear**2 / (np.pi * AR * e_
 
 cd_landing_gear = (CD0 + dCD0_lf+dCD0_gear) + (cl_landing_gear**2 / (np.pi * AR * e_lf))
 
-# Drag Polar
-# plt.figure(figsize=(10, 6))
-# plt.title('Fighter Aircraft Drag Polars', fontsize=14)
-# plt.xlabel("$C_D$", fontsize=12)
-# plt.ylabel("$C_L$", fontsize=12)
+# plots
+plt.figure(figsize=(10, 6))
+plt.title('Fighter Aircraft Drag Polars', fontsize=14)
+plt.xlabel("$C_D$", fontsize=12)
+plt.ylabel("$C_L$", fontsize=12)
 
-# plt.plot(cd_clean,   cl_clean,   label=f'Clean', linewidth=2)
-# plt.plot(cd_takeoff_no_gear, cl_takeoff_no_gear, label=f'Takeoff Flaps With Gears Up', linewidth=2)
-# plt.plot(cd_takeoff_gear, cl_takeoff_gear, label=f'Takeoff Flaps With Gears Down', linewidth=2)
-# plt.plot(cd_landing_no_gear, cl_landing_no_gear, label=f'Landing Flaps With Gears Up', linewidth=2)
-# plt.plot(cd_landing_gear, cl_landing_gear, label=f'Landing Flaps With Gears Down', linewidth=2)
+plt.plot(cd_clean,   cl_clean,   label=f'Clean', linewidth=2)
+plt.plot(cd_takeoff_no_gear, cl_takeoff_no_gear, label=f'Takeoff Flaps With Gears Up', linewidth=2)
+plt.plot(cd_takeoff_gear, cl_takeoff_gear, label=f'Takeoff Flaps With Gears Down', linewidth=2)
+plt.plot(cd_landing_no_gear, cl_landing_no_gear, label=f'Landing Flaps With Gears Up', linewidth=2)
+plt.plot(cd_landing_gear, cl_landing_gear, label=f'Landing Flaps With Gears Down', linewidth=2)
 
-# plt.grid(True, linestyle=':', alpha=0.6)
-# plt.legend(loc='best')
-# plt.show()
+plt.grid(True, linestyle=':', alpha=0.6)
+plt.legend(loc='best')
+plt.show()
 
 # --- Given Constants ---
 AR = 3.36462 # Aspect Ratio
@@ -109,20 +109,35 @@ G_to = (SEROC_to / 60) / (k_s_to * Vs_to)
 G_approach = (SEROC_approach / 60) / (k_s_approach * Vs_approach)
 e = 0.8 # (taking high end of oswald eff factor for clean config as estimate) 
 k = 1/(np.pi * e * AR)
-coef_1_climb = ((k_s_to**2 * C_D_0/C_L_max_takeoff) + k*(C_L_max_takeoff/k_s_to**2) + G_to) # Climb constraint for takeoff
-coef_2_climb = ((k_s_approach**2 * C_D_0/C_L_max_landing) + k*(C_L_max_landing/k_s_approach**2) + G_approach) # Climb constraint for approach
 
+# coef_1_climb = ((k_s_to**2 * C_D_0/C_L_max_takeoff) + k*(C_L_max_takeoff/k_s_to**2) + G_to) # Climb constraint for takeoff
+# coef_2_climb = ((k_s_approach**2 * C_D_0/C_L_max_landing) + k*(C_L_max_landing/k_s_approach**2) + G_approach) # Climb constraint for approach
+# print("Climb gradient coefficient:", coef_1_climb)
+
+# Changed climb constraints to what cooper recoommended (5.30 Raymer)
+q_climb = 0.5 * rho_SL * Vs_to**2
+coef_1_climb = q_climb * C_D_0
+coef_2_climb = 1/(q_climb * np.pi * AR * e) 
+
+q_approach = 0.5 * rho_SL * Vs_approach**2
+coef_1_approach_climb = q_approach * C_D_0
+coef_2_approach_climb = 1/(q_approach * np.pi * AR * e)
 
 # Cruise / Dash
 # Using dash speed for air to air mission since assignment asks for dash speed
 V_dash_a2a = 589* 1.6878*1.6 ## ft/s (Speed) [Using Ma = 1.6 at 30,000 ft dash speed for Air to Air Combat]
-                     ## Speed of soud pulled from Engineers Edge Table for 30,000 ft
-V_dash_strike = 661 * 1.6878 * .85 ## ft/s (Speed) [Using Ma = .85 dash speed for Strike]
-                     ## Speed of sound pulled from Engineers Edge Table for sea level
+                     ## Speed of soud pulled from Engineers Edge Table for 30,000 
+V_dash_strike = 589* 1.6878*.85 ## ft/s (Speed) [Using Ma = .85 dash speed for Strike]
 rho_a2a = 0.000891  # slugs/ft^3 (air density at 30,000 ft)
-q = 1/2 * rho_a2a * V_dash_a2a**2
-q_strike = 1/2 * rho_SL * V_dash_strike**2
+rho_strike = rho_20000
+q_a2a = 1/2 * rho_a2a * V_dash_a2a**2
+q_strike = 1/2 * rho_strike * V_dash_strike**2
 e_dash = 0.8  # assuming clean config for dash
+
+a2a_coeff1 = q_a2a * C_D_0_calc
+a2a_coeff2 = 1/(q_a2a * np.pi * AR * e_dash)
+strike_coeff1 = q_strike * C_D_0_calc
+strike_coeff2 = 1/(q_strike * np.pi * AR * e_dash)
 
 # Sustained Turn Constraint
 V_turn = 548.538 # ft/s (325 knots) From Raymer of estimated sustained turn speed for fighter aircraft
@@ -139,17 +154,11 @@ TW_takeoff = takeoff_W_S
 # TW_landing = (rho_landing_rhoSL * C_L_max_takeoff) / (80 * Wl_Wto) * (s_land + s_a) * np.ones(30)
 TW_landing = landing_W_S
 print("TW_Landing:", TW_landing)
-TW_takeoff_climb = coef_1_climb * np.ones(len(WS))
-TW_approach_climb = coef_2_climb * np.ones(len(WS))
+TW_takeoff_climb = coef_1_climb/WS + coef_2_climb * WS + G_to
+TW_approach_climb = coef_1_approach_climb/WS + coef_2_approach_climb * WS + G_approach
 TW_turn = turn_coeff1*(1/WS) + turn_coeff2 * WS
-TW_cruise_a2a = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
-TW_cruise_strike = (q_strike * C_D_0_calc) / WS + (WS) / (q_strike * np.pi * AR * e_dash)
-a2a_cruise_coef_1 = q * C_D_0_calc
-a2a_cruise_coef_2 = 1 / (q * np.pi * AR * e_dash)
-strike_cruise_coef_1 = q_strike * C_D_0_calc
-strike_cruise_coef_2 = 1 / (q_strike * np.pi * AR * e_dash)
-print("a2a coefs 1 & 2: ", a2a_cruise_coef_1, " & ", a2a_cruise_coef_2)
-print("strike coefs 1 & 2: ", strike_cruise_coef_1, " & ", strike_cruise_coef_2)
+TW_cruise_a2a = (a2a_coeff1) / WS + (WS) / (a2a_coeff2)
+TW_cruise_strike = (strike_coeff1) / WS + (WS) / (strike_coeff2)
 
 plt.figure(figsize=(14,8))
 
@@ -405,7 +414,7 @@ def outer_loop_thrust_for_one_constraint(
     num_engines,
     S_ht, S_vt, S_wet_fuselage,
     W_crew, W_payload,
-    type, T_W_coef_1, T_W_coef_2,
+    type, T_W_coef_1, T_W_coef_2, G,
     tol_T_rel=1e-3,          
     max_iter_T=100,
     relax=1.0                # optional damping: 0.3~1.0 (use <1 if oscillation)
@@ -460,7 +469,7 @@ def outer_loop_thrust_for_one_constraint(
 
                 W0 = W0_limit
             elif type == 3:
-                TW_req = T_W_coef_1 / WS + T_W_coef_2 * WS
+                TW_req = T_W_coef_1 / WS + T_W_coef_2 * WS + G
             
             # Required total thrust
             T_req = TW_req * W0
@@ -532,7 +541,8 @@ S_wing_grid = list(range(0, 1000, 1))  # Example range of wing areas to analyze
 TOGW_guess_init = 70000  # Initial guess for Takeoff Gross Weight in pounds
 T_total_guess_init = 15000 * num_engines  # Initial guess for total thrust in pounds-force
 
-T_W_approach_climb = coef_2_climb
+T_W_approach_climb1 = coef_1_approach_climb
+T_W_approach_climb2 = coef_2_approach_climb
 
 T_approach_climb_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
     S_wing_grid=S_wing_grid,
@@ -542,8 +552,9 @@ T_approach_climb_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, 
     S_ht=S_ht, S_vt=S_vt, S_wet_fuselage=S_wet_fuselage,
     W_crew=W_crew, W_payload=W_payload_a2a,
     type = 1,
-    T_W_coef_1 = T_W_approach_climb,
-    T_W_coef_2 = 0,
+    T_W_coef_1 = T_W_approach_climb1,
+    T_W_coef_2 = T_W_approach_climb2,
+    G = G_approach,
     tol_T_rel=1e-6,
     max_iter_T=200,
     relax=1
@@ -561,6 +572,7 @@ T_takeoff_climb_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, i
     type = 1,
     T_W_coef_1 = T_W_takeoff_climb,
     T_W_coef_2 = 0,
+    G=G_to,
     tol_T_rel=1e-6,
     max_iter_T=200,
     relax=1
@@ -579,13 +591,14 @@ T_turn_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final
     type = 3,
     T_W_coef_1 = coeff_1_turn,
     T_W_coef_2 = coeff_2_turn,
+    G=0,
     tol_T_rel=1e-6,
     max_iter_T=200,
     relax=1
 )
 
-a2a_coeff_1_cruise = a2a_cruise_coef_1
-a2a_coeff_2_cruise = a2a_cruise_coef_2
+a2a_coeff_1_cruise = a2a_coeff1
+a2a_coeff_2_cruise = a2a_coeff2
 T_a2a_cruise_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
     S_wing_grid=S_wing_grid,
     TOGW_guess_init=TOGW_guess_init,
@@ -596,23 +609,25 @@ T_a2a_cruise_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w
     type = 3,
     T_W_coef_1 = a2a_coeff_1_cruise,
     T_W_coef_2 = a2a_coeff_2_cruise,
+    G=0,
     tol_T_rel=1e-6,
     max_iter_T=200,
     relax=1
 )
 
-strike_coeff_1_cruise = strike_cruise_coef_1
-strike_coeff_2_cruise = strike_cruise_coef_2  
+strike_coeff_1_cruise = strike_coeff1
+strike_coeff_2_cruise = strike_coeff2  
 T_strike_cruise_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
     S_wing_grid=S_wing_grid,
     TOGW_guess_init=TOGW_guess_init,
     T_total_guess_init=T_total_guess_init,
     num_engines=num_engines,
     S_ht=S_ht, S_vt=S_vt, S_wet_fuselage=S_wet_fuselage,
-    W_crew=W_crew, W_payload=W_payload_a2a,
+    W_crew=W_crew, W_payload=W_payload_strike,
     type = 3,
     T_W_coef_1 = strike_coeff_1_cruise,
     T_W_coef_2 = strike_coeff_2_cruise,
+    G=0,
     tol_T_rel=1e-6,
     max_iter_T=200,
     relax=1
@@ -630,6 +645,7 @@ T_takeoff_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_fi
     type = 2,
     T_W_coef_1 = takeoff_coeff_1,
     T_W_coef_2 = TW_design,
+    G=0,
     tol_T_rel=1e-6,
     max_iter_T=200,
     relax=1
@@ -646,6 +662,7 @@ T_landing_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_fi
     type = 2,
     T_W_coef_1 = landing_coeff_1,
     T_W_coef_2 = TW_design,
+    G=0,
     tol_T_rel=1e-6,
     max_iter_T=200,
     relax=1
