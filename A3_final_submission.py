@@ -109,9 +109,19 @@ G_to = (SEROC_to / 60) / (k_s_to * Vs_to)
 G_approach = (SEROC_approach / 60) / (k_s_approach * Vs_approach)
 e = 0.8 # (taking high end of oswald eff factor for clean config as estimate) 
 k = 1/(np.pi * e * AR)
-coef_1_climb = ((k_s_to**2 * C_D_0/C_L_max_takeoff) + k*(C_L_max_takeoff/k_s_to**2) + G_to) # Climb constraint for takeoff
-coef_2_climb = ((k_s_approach**2 * C_D_0/C_L_max_landing) + k*(C_L_max_landing/k_s_approach**2) + G_approach) # Climb constraint for approach
-print("Climb gradient coefficient:", coef_1_climb)
+
+# coef_1_climb = ((k_s_to**2 * C_D_0/C_L_max_takeoff) + k*(C_L_max_takeoff/k_s_to**2) + G_to) # Climb constraint for takeoff
+# coef_2_climb = ((k_s_approach**2 * C_D_0/C_L_max_landing) + k*(C_L_max_landing/k_s_approach**2) + G_approach) # Climb constraint for approach
+# print("Climb gradient coefficient:", coef_1_climb)
+
+# Changed climb constraints to what cooper recoommended (5.30 Raymer)
+q_climb = 0.5 * rho_SL * Vs_to**2
+coef_1_climb = q_climb * C_D_0
+coef_2_climb = 1/(q_climb * np.pi * AR * e) 
+
+q_approach = 0.5 * rho_SL * Vs_approach**2
+coef_1_approach_climb = q_approach * C_D_0
+coef_2_approach_climb = 1/(q_approach * np.pi * AR * e)
 
 # Cruise / Dash
 # Using dash speed for air to air mission since assignment asks for dash speed
@@ -119,8 +129,15 @@ V_dash_a2a = 589* 1.6878*1.6 ## ft/s (Speed) [Using Ma = 1.6 at 30,000 ft dash s
                      ## Speed of soud pulled from Engineers Edge Table for 30,000 
 V_dash_strike = 589* 1.6878*.85 ## ft/s (Speed) [Using Ma = .85 dash speed for Strike]
 rho_a2a = 0.000891  # slugs/ft^3 (air density at 30,000 ft)
-q = 1/2 * rho_a2a * V_dash_a2a**2
+rho_strike = rho_20000
+q_a2a = 1/2 * rho_a2a * V_dash_a2a**2
+q_strike = 1/2 * rho_strike * V_dash_strike**2
 e_dash = 0.8  # assuming clean config for dash
+
+a2a_coeff1 = q_a2a * C_D_0_calc
+a2a_coeff2 = 1/(q_a2a * np.pi * AR * e_dash)
+strike_coeff1 = q_strike * C_D_0_calc
+strike_coeff2 = 1/(q_strike * np.pi * AR * e_dash)
 
 # Sustained Turn Constraint
 V_turn = 548.538 # ft/s (325 knots) From Raymer of estimated sustained turn speed for fighter aircraft
@@ -137,11 +154,11 @@ TW_takeoff = takeoff_W_S
 # TW_landing = (rho_landing_rhoSL * C_L_max_takeoff) / (80 * Wl_Wto) * (s_land + s_a) * np.ones(30)
 TW_landing = landing_W_S
 print("TW_Landing:", TW_landing)
-TW_takeoff_climb = coef_1_climb * np.ones(len(WS))
-TW_approach_climb = coef_2_climb * np.ones(len(WS))
+TW_takeoff_climb = coef_1_climb/WS + coef_2_climb * WS + G_to
+TW_approach_climb = coef_1_approach_climb/WS + coef_2_approach_climb * WS + G_approach
 TW_turn = turn_coeff1*(1/WS) + turn_coeff2 * WS
-TW_cruise_a2a = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
-TW_cruise_strike = (V_dash_strike * C_D_0_calc) / WS + (WS) / (V_dash_strike * np.pi * AR * e_dash)
+TW_cruise_a2a = (a2a_coeff1) / WS + (WS) / (a2a_coeff2)
+TW_cruise_strike = (strike_coeff1) / WS + (WS) / (strike_coeff2)
 
 plt.figure(figsize=(14,8))
 

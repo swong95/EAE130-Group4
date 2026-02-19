@@ -443,8 +443,8 @@ def outer_loop_thrust_for_one_constraint(
             # Example for takeoff climb: TW_req = T_W_takeoff_climb
 
             # Type 2 refers to W/S driven constraints like takeoff and landing. These are the vertical lines
-            # on the T/W - W/S constraint diagram and are given as constants in terms of W/S. This likely requires
-            # a rewritten outer loop to find wing surface area, S instead of T like we already have.
+            # on the T/W - W/S constraint diagram and are given as constants in terms of W/S. By plugging in
+            # our design T/W, we can generate a constraint plot for this type of constraint.
             
             # Type 3 refers to T/W driven constraints like cruise/dash and turn. These are in the form of
             # TW_req = coef_1 / WS + coef_2 * WS.
@@ -452,7 +452,13 @@ def outer_loop_thrust_for_one_constraint(
             if type == 1:
                 TW_req = T_W_coef_1
             elif type == 2:
-                TW_req = T_W_coef_1 / WS
+                WS_limit = T_W_coef_1
+                W0_limit = WS_limit * S_wing
+
+                TW_design = T_W_coef_2
+                TW_req = TW_design
+
+                W0 = W0_limit
             elif type == 3:
                 TW_req = T_W_coef_1 / WS + T_W_coef_2 * WS
             
@@ -521,7 +527,7 @@ S_wet_fuselage = 687
 num_engines = 2
 
 # Set grid of wing areas to analyze
-S_wing_grid = list(range(0, 6000, 1))  # Example range of wing areas to analyze
+S_wing_grid = list(range(0, 1000, 1))  # Example range of wing areas to analyze
 
 TOGW_guess_init = 70000  # Initial guess for Takeoff Gross Weight in pounds
 T_total_guess_init = 15000 * num_engines  # Initial guess for total thrust in pounds-force
@@ -612,6 +618,8 @@ T_strike_cruise_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, i
     relax=1
 )
 
+takeoff_coeff_1 = takeoff_W_S
+TW_design = 0.35
 T_takeoff_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
     S_wing_grid=S_wing_grid,
     TOGW_guess_init=TOGW_guess_init,
@@ -620,8 +628,24 @@ T_takeoff_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_fi
     S_ht=S_ht, S_vt=S_vt, S_wet_fuselage=S_wet_fuselage,
     W_crew=W_crew, W_payload=W_payload_a2a,
     type = 2,
-    T_W_coef_1 = T_W_takeoff_climb,
-    T_W_coef_2 = 0,
+    T_W_coef_1 = takeoff_coeff_1,
+    T_W_coef_2 = TW_design,
+    tol_T_rel=1e-6,
+    max_iter_T=200,
+    relax=1
+)
+
+landing_coeff_1 = landing_W_S
+T_landing_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
+    S_wing_grid=S_wing_grid,
+    TOGW_guess_init=TOGW_guess_init,
+    T_total_guess_init=T_total_guess_init,
+    num_engines=num_engines,
+    S_ht=S_ht, S_vt=S_vt, S_wet_fuselage=S_wet_fuselage,
+    W_crew=W_crew, W_payload=W_payload_a2a,
+    type = 2,
+    T_W_coef_1 = landing_coeff_1,
+    T_W_coef_2 = TW_design,
     tol_T_rel=1e-6,
     max_iter_T=200,
     relax=1
@@ -713,7 +737,15 @@ print('Outer loop never iterated more than ',max(n_iter_T), ' times, which is le
 
 # Plot the resulting T vs S curve from the outer loop convergence
 T_actual_F18 = 44000
+T_actual_F18 = 44000
 S_actual_F18 = 500
+
+T_F14 = 53900
+S_F14 = 565
+
+T_F18_CD = 35500
+S_F18_CD = 410
+
 print(f'Actual T for F-18: {T_actual_F18} lbf, Actual S for F-18: {S_actual_F18} ft^2')
 
 T_design_twinF414 = T_design # 22,000 lbf per GE F-414-400
