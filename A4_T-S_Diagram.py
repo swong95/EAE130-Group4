@@ -720,7 +720,7 @@ print(f'Actual T for F-18: {T_actual_F18} lbf, Actual S for F-18: {S_actual_F18}
 T_design_twinF414 = T_design # 22,000 lbf per GE F-414-400
 S_design_twinF414 = S_design
 plt.figure(figsize=(16,9))
-plt.title('Converged T vs S for Approach Climbing Constraint')
+plt.title('Converged T vs S for All Constraints')
 plt.xlabel("Wing Area S (ft^2)")
 plt.ylabel("Total Thrust T (lbf)")
 plt.plot(S_actual_F18, T_actual_F18, label='Actual F/A-18 E/F Super Hornet', marker='x', markersize=10, color='red')
@@ -735,6 +735,7 @@ plt.xlim(50, 1000)   # realistic wing area range for a fighter (ft^2); F/A-18 is
 y_max_plot = 45000 # i dropped ylim from 60k to 45k since turn constraint doesnt extend up to 60k
 plt.ylim(0, y_max_plot) # realistic total thrust range (lbf); adjust if curves are cut off
 T_limiting = np.maximum(T_turn_curve, T_strike_cruise_curve)
+T_limiting = np.maximum(T_limiting, T_approach_climb_curve)
 
 plt.fill_between(
     S_wing_grid, 
