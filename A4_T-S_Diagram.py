@@ -254,6 +254,12 @@ TW_design = 0.328
 WS_design = 72.30 # lbf/ft^2
 
 # Takeoff Distance Check
+#TO distance
+W_to = 66400
+# T_to = 44000 # Using F-18 e/f engines, 13000 per engine
+F_to = 0.8*3*W_to
+W_T_to = 0.328
+d_TO = (k_s_to**2/32.2) * (W_to/s_ref)/(rho_SL*C_L_max_takeoff*(W_T_to+(F_to/W_to)))
 
 
 
@@ -700,6 +706,53 @@ T_landing_valid  = np.array(T_landing_valid)
 # END LANDING LENGTH CONSTRAINT
 # ============================================================
 
+# ============================================================
+# TAKEOFF LENGTH CONSTRAINT
+# ============================================================
+C_L_max_TO = 2
+F_catapult_avg = 0.8 * 3 * W0_final
+d_max_TO = 300 # ft
+max_TO_iter = 100
+TO_s_tol = 1e-5
+T_TO_grid = np.linspace(5000, 120000, 500)
+
+S_TO_curve = []
+T_TO_valid = []
+
+for T_total_TO in T_TO_grid:
+    T_0_TO = T_total_TO / num_engines
+
+    S_TO_guess = s_ref
+    
+    wconv_TO = False
+    for j in range(max_TO_iter):
+        W0_TO, wconv_TO, j, j = inner_loop_weight(
+            TOGW_guess_init,
+            S_TO_guess, S_ht, S_vt, S_wet_fuselage,
+            num_engines, W_crew, W_payload_a2a, T_0_TO
+        )
+
+        W_TO = W0_TO
+        S_TO_new = (k_s_to**2 * W_TO**2)/(rho_SL*C_L_max_TO*g*(T_total_TO + F_catapult_avg)*d_max_TO)
+
+        if abs(S_TO_new - S_TO_guess) / max(S_TO_guess, 1e-9) < TO_s_tol:
+            S_TO_guess = S_TO_new
+            break
+
+        S_TO_guess = S_TO_new
+    
+    if wconv_TO:
+        S_TO_curve.append(S_TO_guess)
+        T_TO_valid.append(T_total_TO)
+
+S_TO_curve = np.array(S_TO_curve)
+T_TO_valid = np.array(T_TO_valid)
+
+# =================================================
+# END TAKEOFF CONSTRAINT
+# =================================================
+
+
 # A3 Design Point
 TW_design = 0.328
 WS_design = 72.30 # lbf/ft^2
@@ -731,6 +784,7 @@ plt.plot(S_wing_grid, T_turn_curve, label = 'Turn Constraint')
 plt.plot(S_wing_grid, T_a2a_cruise_curve, label = 'Air-to-Air Dash Constraint')
 plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
 plt.plot(S_landing_curve, T_landing_valid, label='Landing Constraint', linewidth=2)  # landing line
+plt.plot(S_TO_curve, T_TO_valid, label='Takeoff Constraint', linewidth=2)  # takeoff line
 plt.xlim(50, 1000)   # realistic wing area range for a fighter (ft^2); F/A-18 is 500 ft^2
 y_max_plot = 45000 # i dropped ylim from 60k to 45k since turn constraint doesnt extend up to 60k
 plt.ylim(0, y_max_plot) # realistic total thrust range (lbf); adjust if curves are cut off
