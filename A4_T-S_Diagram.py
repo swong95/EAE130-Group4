@@ -757,10 +757,20 @@ T_TO_valid = np.array(T_TO_valid)
 TW_design = 0.328
 WS_design = 72.30 # lbf/ft^2
 
-T_design = TW_design * 66000
-S_design = 66000 / WS_design
+T_design = 25000 # lbf
+S_design = 600 # ft^2
 
+T_actual_F18 = 44000
+S_actual_F18 = 500
 
+T_F14 = 53900
+S_F14 = 565
+
+T_F18_CD = 35500
+S_F18_CD = 410
+
+T_F35C = 52000
+S_F35C = 668
 # Deciding if loops converged or not
 print('Inner loop never iterated more than ',max(it_w_final), ' times, which is less than the chosen max of 200 meaning the loop converged.')
 print('Outer loop never iterated more than ',max(n_iter_T), ' times, which is less than the chosen max of 200 meaning the loop converged.')
@@ -770,13 +780,16 @@ T_actual_F18 = 44000
 S_actual_F18 = 500
 print(f'Actual T for F-18: {T_actual_F18} lbf, Actual S for F-18: {S_actual_F18} ft^2')
 
-T_design_twinF414 = T_design # 22,000 lbf per GE F-414-400
+T_design_twinF414 = T_design 
 S_design_twinF414 = S_design
 plt.figure(figsize=(16,9))
 plt.title('Converged T vs S for All Constraints')
 plt.xlabel("Wing Area S (ft^2)")
 plt.ylabel("Total Thrust T (lbf)")
 plt.plot(S_actual_F18, T_actual_F18, label='Actual F/A-18 E/F Super Hornet', marker='x', markersize=10, color='red')
+plt.plot(S_F14,T_F14, label = 'Grumman F-14 Tomcat', marker = 'x', markersize=10,color='green')
+plt.plot(S_F18_CD,T_F18_CD, label = 'F/A-18 C/D Hornet', marker = 'x', markersize=10,color='orange')
+plt.plot(S_F35C,T_F35C, label = 'F-35C Lightning II', marker = 'x', markersize=10,color='purple')
 plt.plot(S_design_twinF414, T_design_twinF414, label='F/A-XX Design Point', marker='x', markersize=10, color='blue')
 plt.plot(S_wing_grid, T_approach_climb_curve, label='Approach Climb Constraint')
 plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb Constraint')
