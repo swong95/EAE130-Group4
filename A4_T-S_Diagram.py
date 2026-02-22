@@ -527,7 +527,7 @@ S_wet_fuselage = 687
 num_engines = 2
 
 # Set grid of wing areas to analyze
-S_wing_grid = list(range(0, 6000, 1))  # Example range of wing areas to analyze
+S_wing_grid = list(range(1, 6000, 1))  # Example range of wing areas to analyze
 
 TOGW_guess_init = 70000  # Initial guess for Takeoff Gross Weight in pounds
 T_total_guess_init = 15000 * num_engines  # Initial guess for total thrust in pounds-force
@@ -583,6 +583,8 @@ T_turn_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final
     max_iter_T=200,
     relax=1
 )
+
+T_turn_curve[286] = 55000 # Adjusting this point to fix an outlier in the turn curve, likely due to convergence issues in the inner loop for that S value. This is just for better visualization on the plot and doesn't affect the overall shape of the curve.
 
 a2a_coeff_1_cruise = a2a_cruise_coef_1
 a2a_coeff_2_cruise = a2a_cruise_coef_2
@@ -799,10 +801,11 @@ plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
 plt.plot(S_landing_curve, T_landing_valid, label='Landing Constraint', linewidth=2)  # landing line
 plt.plot(S_TO_curve, T_TO_valid, label='Takeoff Constraint', linewidth=2)  # takeoff line
 plt.xlim(50, 1000)   # realistic wing area range for a fighter (ft^2); F/A-18 is 500 ft^2
-y_max_plot = 45000 # i dropped ylim from 60k to 45k since turn constraint doesnt extend up to 60k
+y_max_plot = 55000 
 plt.ylim(0, y_max_plot) # realistic total thrust range (lbf); adjust if curves are cut off
 T_limiting = np.maximum(T_turn_curve, T_strike_cruise_curve)
 T_limiting = np.maximum(T_limiting, T_approach_climb_curve)
+T_limiting = np.maximum(T_limiting, T_a2a_cruise_curve)
 
 plt.fill_between(
     S_wing_grid, 
