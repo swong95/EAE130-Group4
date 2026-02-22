@@ -584,7 +584,9 @@ T_turn_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final
     relax=1
 )
 
-T_turn_curve[286] = 55000 # Adjusting this point to fix an outlier in the turn curve, likely due to convergence issues in the inner loop for that S value. This is just for better visualization on the plot and doesn't affect the overall shape of the curve.
+T_turn_curve[286] = 55000 
+# Adjusting this point to fix an outlier in the turn curve, likely due to convergence issues in the inner loop for that S value. 
+# This is just for better visualization on the plot and doesn't affect the overall shape of the curve.
 
 a2a_coeff_1_cruise = a2a_cruise_coef_1
 a2a_coeff_2_cruise = a2a_cruise_coef_2
