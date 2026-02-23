@@ -788,8 +788,8 @@ T_design_twinF414 = T_design
 S_design_twinF414 = S_design
 plt.figure(figsize=(16,9))
 plt.title('Converged T vs S for All Constraints')
-plt.xlabel("Wing Area S (ft^2)")
-plt.ylabel("Total Thrust T (lbf)")
+plt.xlabel(r'Wing Area S (ft$^2$)')
+plt.ylabel(r'Total Thrust T (lbf)')
 plt.plot(S_actual_F18, T_actual_F18, label='Actual F/A-18 E/F Super Hornet', marker='x', markersize=10, color='red')
 plt.plot(S_F14,T_F14, label = 'Grumman F-14 Tomcat', marker = 'x', markersize=10,color='green')
 plt.plot(S_F18_CD,T_F18_CD, label = 'F/A-18 C/D Hornet', marker = 'x', markersize=10,color='orange')
