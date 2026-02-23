@@ -11,7 +11,8 @@ e = 0.8
 rho_SL = 0.002377              # slugs/ft^3
 rho_30k = 0.000891             
 sigma_30k = rho_30k / rho_SL    
-g = 32.174                     
+g = 32.174
+k = 1/(np.pi * e * AR)                     
 
 # --- 2. Mission Requirements ---
 W_to = 31255.0                 
@@ -24,7 +25,17 @@ s_to_req = 2500                # ft
 s_land_req = 3500              # ft
 CL_max_to = 2.0                
 CL_max_land = 2.4              
-Wl_Wto = 0.85                  
+Wl_Wto = 0.85
+
+#Climb Requirements
+k_s = 1.2
+Vs_to = np.sqrt(2*W_to / (rho_SL * s_ref * CL_max_to))
+
+SEROC_to = 200                 # ft/min
+SEROC_approach = 500           # ft/min
+G_to = (SEROC_to / 60) / (k_s * Vs_to)                     
+# Come back to this one
+# G_approach = (SEROC_approach / 60) / (k_s * Vs_to)                 
 
 # --- 3. Baseline Design Point (Dry Thrust) ---
 # Total dry thrust for 2x F404-GE-402 engines (~11,000 lbf each)
@@ -55,7 +66,7 @@ TW_strike_sl = (q_strike * C_D_0 / WS) + (WS / (q_strike * np.pi * AR * e))
 
 # D. Takeoff Climb
 L_D_climb = 0.5 * np.sqrt(np.pi * AR * e / C_D_0) 
-TW_climb = (2 / (2 - 1)) * ((1 / L_D_climb) + 0.025) * np.ones_like(WS)
+TW_climb = ((k_s**2 * C_D_0/CL_max_to) + k*(CL_max_to/k_s**2) + G_to) * np.ones_like(WS)
 
 # --- 5. Plotting ---
 plt.figure(figsize=(10, 7))
@@ -92,4 +103,29 @@ plt.xlim(0, 250)
 plt.legend(loc='upper right', frameon=True, shadow=True, fontsize='small')
 
 plt.tight_layout()
+
+# ----- F/A-18 Super Hornet design point -----
+WS_f18 = 127.0   # lb/ft^2
+TW_f18 = 0.93
+
+plt.scatter(
+    WS_f18,
+    TW_f18,
+    s=120,
+    marker='*',
+    color='black',
+    zorder=5,
+    label='F/A-18E/F Super Hornet'
+)
+
+plt.annotate(
+    'F/A-18E/F',
+    (WS_f18, TW_f18),
+    textcoords="offset points",
+    xytext=(8,8),
+    fontsize=9
+)
+plt.legend(loc='best')
 plt.show()
+
+

@@ -39,12 +39,12 @@ print("W_payload_strike: " + str(W_payload_strike) + " lb")
 
 # L_D Max Estiamtion
 Wetted_asp_area = 46.0  # IMPORT IN FROM CAD MODEL 
-L_D_max = 9.25             # LOOK AT FIG 3.5 FROM RAYMER TO ESTIMATE L/D MAX BASED ON WETTED AREA ASPECT RATIO
+L_D_max = 9             # LOOK AT FIG 3.5 FROM RAYMER TO ESTIMATE L/D MAX BASED ON WETTED AREA ASPECT RATIO
                         ## Using F-15 as reference id using extrapolation try 10.5 FIG 2.4 FROM Martins
 L_D = 0.866 * L_D_max   # 86.6% of L/D_max is typical estimate for jets at cruise (pg 43 of Raymer)
 
 # Mission Parameters
-R = 700                 # nmi (Range) [RFP requests 200 nmi combat radius]
+R = 700*2                 # nmi (Range) [RFP requests 200 nmi combat radius]
 E = 20 / 60             # min --> hr (Endurance) [RFP requests 20 min loiter time minimum for landing]
 c = 0.8                 # lb/(lbf hr) (Specific Fuel Consumption) [From Raymer Table 3.3 - Current Super Hornet uses a low bypass turbofan]
 V = 589 * 0.85          # knots (Speed) [Assuming Ma =0.85 cruise speed from "Intermediate Thrust" in Strike section of RFP]
