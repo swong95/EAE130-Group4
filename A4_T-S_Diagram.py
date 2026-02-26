@@ -725,13 +725,18 @@ plt.xlabel("Wing Area S (ft^2)")
 plt.ylabel("Total Thrust T (lbf)")
 plt.plot(S_actual_F18, T_actual_F18, label='Actual F/A-18 E/F Super Hornet', marker='x', markersize=10, color='red')
 plt.plot(S_design_twinF414, T_design_twinF414, label='F/A-XX Design Point', marker='x', markersize=10, color='blue')
+# Calculate the 'S' required for your fixed takeoff wing loading
+# S = W / (W/S_limit)
+S_takeoff_limit = W0_final / takeoff_W_S 
+
+plt.axvline(x=S_takeoff_limit, color='blue', linestyle='--', label='Catapult Takeoff Limit')
 plt.plot(S_wing_grid, T_approach_climb_curve, label='Approach Climb Constraint')
 plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb Constraint')
 plt.plot(S_wing_grid, T_turn_curve, label = 'Turn Constraint')
 plt.plot(S_wing_grid, T_a2a_cruise_curve, label = 'Air-to-Air Dash Constraint')
 plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
 plt.plot(S_landing_curve, T_landing_valid, label='Landing Constraint', linewidth=2)  # landing line
-plt.xlim(50, 1000)   # realistic wing area range for a fighter (ft^2); F/A-18 is 500 ft^2
+plt.xlim(50, 1500)   # realistic wing area range for a fighter (ft^2); F/A-18 is 500 ft^2
 y_max_plot = 45000 # i dropped ylim from 60k to 45k since turn constraint doesnt extend up to 60k
 plt.ylim(0, y_max_plot) # realistic total thrust range (lbf); adjust if curves are cut off
 T_limiting = np.maximum(T_turn_curve, T_strike_cruise_curve)
