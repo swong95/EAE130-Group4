@@ -154,7 +154,41 @@ strike_cruise_coef_2 = 1 / (q_strike * np.pi * AR * e_dash)
 print("a2a coefs 1 & 2: ", a2a_cruise_coef_1, " & ", a2a_cruise_coef_2)
 print("strike coefs 1 & 2: ", strike_cruise_coef_1, " & ", strike_cruise_coef_2)
 
+# Design point
+TW_design = 0.328
+WS_design = 72.30 # lbf/ft^2
+
+## Optional Plot of TS vs WS Constraint Diagram 
 plt.figure(figsize=(14,8))
+
+plt.title("Classical Constraint Diagram")
+plt.xlabel(r"Wing Loading $W/S$ (lb/ft$^2$)")
+plt.ylabel(r"Thrust-to-Weight $T/W$")
+
+# Horizontal constraints
+plt.plot(WS, TW_takeoff_climb, label='Takeoff Climb')
+plt.plot(WS, TW_approach_climb, label='Approach Climb')
+
+# Curved constraints
+plt.plot(WS, TW_turn, label='Sustained Turn')
+plt.plot(WS, TW_cruise_a2a, label='Air-to-Air Dash')
+plt.plot(WS, TW_cruise_strike, label='Strike Dash')
+
+# Vertical constraints (W/S limits)
+plt.axvline(TW_takeoff, linestyle='-', label='Takeoff W/S Limit', color='yellow')
+plt.axvline(TW_landing, linestyle='-', label='Landing W/S Limit', color = 'purple')
+plt.axvline(TW_stall, linestyle='-', label='Stall W/S Limit', color = 'darkblue')
+plt.axvline(TW_inst_turn, linestyle='-', label='Instantaneous Turn W/S Limit', color = 'cyan')
+
+# Design point
+plt.scatter(WS_design, TW_design, color='red', s=80, label='Design Point')
+
+plt.xlim(0,150)
+plt.ylim(0,1)
+
+plt.grid(True)
+plt.legend(loc = 'best')
+plt.show()
 
 plt.rcParams.update({
     "font.size": 14,
@@ -164,11 +198,7 @@ plt.rcParams.update({
     "ytick.labelsize": 14,
     "legend.fontsize": 12
 })
-
-
-# Design point
-TW_design = 0.328
-WS_design = 72.30 # lbf/ft^2
+## End of optional plot code
 
 # Takeoff Distance Check
 #TO distance
