@@ -35,21 +35,7 @@ cd_landing_no_gear = (CD0 + dCD0_lf) + (cl_landing_no_gear**2 / (np.pi * AR * e_
 
 cd_landing_gear = (CD0 + dCD0_lf+dCD0_gear) + (cl_landing_gear**2 / (np.pi * AR * e_lf))
 
-# Drag Polar
-# plt.figure(figsize=(10, 6))
-# plt.title('Fighter Aircraft Drag Polars', fontsize=14)
-# plt.xlabel("$C_D$", fontsize=12)
-# plt.ylabel("$C_L$", fontsize=12)
 
-# plt.plot(cd_clean,   cl_clean,   label=f'Clean', linewidth=2)
-# plt.plot(cd_takeoff_no_gear, cl_takeoff_no_gear, label=f'Takeoff Flaps With Gears Up', linewidth=2)
-# plt.plot(cd_takeoff_gear, cl_takeoff_gear, label=f'Takeoff Flaps With Gears Down', linewidth=2)
-# plt.plot(cd_landing_no_gear, cl_landing_no_gear, label=f'Landing Flaps With Gears Up', linewidth=2)
-# plt.plot(cd_landing_gear, cl_landing_gear, label=f'Landing Flaps With Gears Down', linewidth=2)
-
-# plt.grid(True, linestyle=':', alpha=0.6)
-# plt.legend(loc='best')
-# plt.show()
 
 # --- Given Constants ---
 AR = 3.36462 # Aspect Ratio
@@ -124,13 +110,28 @@ q = 1/2 * rho_a2a * V_dash_a2a**2
 q_strike = 1/2 * rho_SL * V_dash_strike**2
 e_dash = 0.8  # assuming clean config for dash
 
+# Stall Constraint
+C_L_max_clean = 1.8
+V_stall_clean = 131 * 1.6878 # rough estimate using RFP ##### Change later
+q_stall = 0.5 * rho_SL * V_stall_clean**2
+stall_W_S = q_stall * C_L_max_clean/.5
+
 # Sustained Turn Constraint
 V_turn = 548.538 # ft/s (325 knots) From Raymer of estimated sustained turn speed for fighter aircraft
 phi = 8 # deg/s turn rate, RFP
 n = np.sqrt(((phi*(np.pi/180))*V_turn/g)**2 + 1) # load factor for sustained turn 
+print("Load factor for sustained turn: ", n)
 q_turn = 0.5 * rho_20000 * V_turn**2 # turning dynamic pressure at 20,000 ft
 turn_coeff1 = q_turn * C_D_0_calc 
 turn_coeff2 = n**2 / (q_turn * np.pi * AR * e_dash)
+
+# Instantaneous Turn Constraint
+V_inst_turn = 350 * 1.6878 # ft/s From Raymer Instantaneous Turn Section
+C_L_max_inst_turn = 0.8 # From Raymer Instantaneous Turn Section
+n_inst_turn = 8 # From Raymer Instantaneous Turn Section
+rho_10000 = 0.0017556
+q_inst_turn = 0.5 * rho_10000 * V_inst_turn**2
+inst_turn_W_S = q_inst_turn*C_L_max_inst_turn/n_inst_turn
 
 # WS Plot
 WS = np.linspace(1,150,300)
@@ -142,8 +143,10 @@ print("TW_Landing:", TW_landing)
 TW_takeoff_climb = coef_1_climb * np.ones(len(WS))
 TW_approach_climb = coef_2_climb * np.ones(len(WS))
 TW_turn = turn_coeff1*(1/WS) + turn_coeff2 * WS
+TW_inst_turn = inst_turn_W_S
 TW_cruise_a2a = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
 TW_cruise_strike = (q_strike * C_D_0_calc) / WS + (WS) / (q_strike * np.pi * AR * e_dash)
+TW_stall = stall_W_S
 a2a_cruise_coef_1 = q * C_D_0_calc
 a2a_cruise_coef_2 = 1 / (q * np.pi * AR * e_dash)
 strike_cruise_coef_1 = q_strike * C_D_0_calc
@@ -162,92 +165,6 @@ plt.rcParams.update({
     "legend.fontsize": 12
 })
 
-# plt.title('T/W - W/S')
-# plt.xlabel("W/S $(lb/ft^2)$")
-# plt.ylabel("T/W")
-# plt.plot(WS, TW_takeoff_climb, label='Takeoff Climb Constraint', linestyle='-', linewidth=2)
-# plt.plot(WS, TW_approach_climb, label='Approach Climb Constraint', linestyle='-', linewidth=2)
-# plt.plot(WS, TW_cruise_a2a, label='Cruise Constraint (Air to Air)', linestyle='-', linewidth=2)
-# plt.plot(WS, TW_cruise_strike, label='Cruise Constraint (Strike)', linestyle='-', linewidth=2)
-# plt.plot(WS, TW_turn, label='Sustained Turn Constraint', linestyle='-', linewidth=2)
-# ymin, ymax = plt.ylim()
-# plt.vlines(TW_takeoff, ymin, ymax, label='Takeoff Constraint', colors='blue', linewidth=2)
-# plt.vlines(TW_landing, ymin, ymax, label='Landing Constraint', colors='orange', linewidth=2)
-# plt.ylim(0, 1.5)
-# plt.legend(loc='best')
-
-# # ----- Shading feasible region -----
-# WS_max = min(takeoff_W_S, landing_W_S)     # most restrictive vertical constraint
-# TW_req = np.maximum.reduce([
-#     TW_takeoff_climb,
-#     TW_approach_climb,
-#     TW_cruise_a2a,
-#     TW_cruise_strike,
-#     TW_turn
-# ])
-
-# # Make sure ylim is set before shading so we know the top fill boundary
-# plt.ylim(0, 1.5)
-# y_top = plt.ylim()[1]
-
-# feasible_mask = (WS <= WS_max) & (TW_req <= y_top)
-
-# plt.fill_between(
-#     WS, TW_req, y_top,
-#     where=feasible_mask,
-#     alpha=0.18,
-#     label='Feasible Design Space'
-# )
-
-# # ----- F/A-18 Super Hornet design point -----
-# WS_f18 = 127.0   # lb/ft^2
-# TW_f18 = 0.93
-
-# plt.scatter(
-#     WS_f18,
-#     TW_f18,
-#     s=120,
-#     marker='*',
-#     color='black',
-#     zorder=5,
-#     label='F/A-18E/F Super Hornet'
-# )
-
-# plt.annotate(
-#     'F/A-18E/F',
-#     (WS_f18, TW_f18),
-#     textcoords="offset points",
-#     xytext=(8,8),
-#     fontsize=9
-# )
-# # ----- Our chosen design point -----
-# WS_design = 72.3
-# TW_design = 0.33
-
-# plt.scatter(
-#     WS_design,
-#     TW_design,
-#     s=110,
-#     marker='o',
-#     color='red',
-#     zorder=6,
-#     label='Chosen Design'
-# )
-
-# plt.annotate(
-#     'Chosen Design Point',
-#     (WS_design, TW_design),
-#     textcoords="offset points",
-#     xytext=(8,-12),
-#     fontsize=9
-# )
-
-# plt.legend(loc='best')
-
-# plt.legend(loc='best')
-
-# plt.show()
-# plt.close()
 
 # Design point
 TW_design = 0.328
@@ -718,7 +635,7 @@ F_catapult_avg = 0.8 * 3 * W0_final
 d_max_TO = 300 # ft
 max_TO_iter = 100
 TO_s_tol = 1e-5
-T_TO_grid = np.linspace(5000, 120000, 500)
+T_TO_grid = np.linspace(0, 120000, 1000)
 
 S_TO_curve = []
 T_TO_valid = []
@@ -752,10 +669,98 @@ for T_total_TO in T_TO_grid:
 S_TO_curve = np.array(S_TO_curve)
 T_TO_valid = np.array(T_TO_valid)
 
+
 # =================================================
 # END TAKEOFF CONSTRAINT
 # =================================================
 
+# ==================================================
+C_L_max_clean = 1.8
+max_stall_iter = 100
+stall_s_tol = 1e-5
+T_stall_grid = np.linspace(0, 120000, 1000)
+
+S_stall_curve = []
+T_stall_valid = []
+
+for T_total_stall in T_stall_grid:
+    T_0_stall = T_total_stall / num_engines
+
+    S_stall_guess = s_ref
+    
+    wconv_stall = False
+    for b in range(max_stall_iter):
+        # W0_stall is TOGW
+        W0_stall, wconv_stall, b, b = inner_loop_weight(
+            TOGW_guess_init,
+            S_stall_guess, S_ht, S_vt, S_wet_fuselage,
+            num_engines, W_crew, W_payload_a2a, T_0_stall
+        )
+
+        # Stall condition is W/S = 0.5 * rho * V_stall^2 * C_L_max
+        # However, we will be assuming the Recovery configuration weight (25% fuel, 50% payload)
+        Wf_W0 = calculate_weight_fraction(L_D_max, R, E, c, V)
+        W_fuel = Wf_W0 * W0_stall
+        W_payload = 0.5 * W_payload_a2a
+        W_recovery = W0_stall - W_fuel - W_payload + .25 * W_fuel  + .5 * W_payload  # Remove Initial Contribution of fuel and payload and adjust Recovery weight with 25% fuel and 50% payload
+
+        stall_WS = 0.5 * rho_SL * V_stall_clean**2 * C_L_max_clean
+
+        S_stall_new = W0_stall / (stall_WS * (W_recovery / W0_stall))
+        print("Weight Fraction W_recovery/W0_stall: ", W_recovery / W0_stall)
+        if abs(S_stall_new - S_stall_guess) / max(S_stall_guess, 1e-9) < stall_s_tol:
+            S_stall_guess = S_stall_new
+            break
+
+        S_stall_guess = S_stall_new
+    
+    if wconv_stall:
+        S_stall_curve.append(S_stall_guess)
+        T_stall_valid.append(T_total_stall)
+
+S_stall_curve = np.array(S_stall_curve)
+T_stall_valid = np.array(T_stall_valid)
+print(T_stall_valid)
+# ============================================
+
+C_L_inst_turn = 0.8
+max_inst_turn_iter = 100
+inst_turn_s_tol = 1e-5
+T_inst_turn_grid = np.linspace(0, 120000, 1000)
+
+S_inst_turn_curve = []
+T_inst_turn_valid = []
+
+for T_total_inst_turn in T_inst_turn_grid:
+    T_0_inst_turn = T_total_inst_turn / num_engines
+
+    S_inst_turn_guess = s_ref
+    
+    wconv_inst_turn = False
+    for z in range(max_inst_turn_iter):
+        W0_inst_turn, wconv_inst_turn, z, z = inner_loop_weight(
+            TOGW_guess_init,
+            S_inst_turn_guess, S_ht, S_vt, S_wet_fuselage,
+            num_engines, W_crew, W_payload_a2a, T_0_inst_turn
+        )
+
+        W_inst_turn = W0_inst_turn * 0.85
+        S_inst_turn_new = W_inst_turn*n_inst_turn/(0.5*C_L_max_clean*rho_10000*V_inst_turn**2)
+
+        if abs(S_inst_turn_new - S_inst_turn_guess) / max(S_inst_turn_guess, 1e-9) < inst_turn_s_tol:
+            S_inst_turn_guess = S_inst_turn_new
+            break
+
+        S_inst_turn_guess = S_inst_turn_new
+    
+    if wconv_inst_turn:
+        S_inst_turn_curve.append(S_inst_turn_guess)
+        T_inst_turn_valid.append(T_total_inst_turn)
+
+S_inst_turn_curve = np.array(S_inst_turn_curve)
+T_inst_turn_valid = np.array(T_inst_turn_valid)
+print(T_inst_turn_valid)
+# ============================================
 
 # A3 Design Point
 TW_design = 0.328
@@ -798,8 +803,10 @@ plt.plot(S_design_twinF414, T_design_twinF414, label='F/A-XX Design Point', mark
 plt.plot(S_wing_grid, T_approach_climb_curve, label='Approach Climb Constraint')
 plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb Constraint')
 plt.plot(S_wing_grid, T_turn_curve, label = 'Turn Constraint')
+plt.plot(S_inst_turn_curve, T_inst_turn_valid, label = 'Instantaneous Turn Constraint')
 plt.plot(S_wing_grid, T_a2a_cruise_curve, label = 'Air-to-Air Dash Constraint')
 plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
+plt.plot(S_stall_curve, T_stall_valid, label = 'Stall Constraint')
 plt.plot(S_landing_curve, T_landing_valid, label='Landing Constraint', linewidth=2)  # landing line
 plt.plot(S_TO_curve, T_TO_valid, label='Takeoff Constraint', linewidth=2)  # takeoff line
 plt.xlim(50, 1000)   # realistic wing area range for a fighter (ft^2); F/A-18 is 500 ft^2
