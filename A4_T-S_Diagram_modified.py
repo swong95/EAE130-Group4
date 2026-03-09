@@ -134,7 +134,7 @@ strike_coeff2 = 1/(q_strike * np.pi * AR * e_dash)
 C_L_max_clean = 1.8
 V_stall_clean = 131 * 1.6878 # rough estimate using RFP ##### Change later
 q_stall = 0.5 * rho_SL * V_stall_clean**2
-stall_W_S = q_stall * C_L_max_clean/.5
+stall_W_S = q_stall * C_L_max_clean/.78
 
 # Sustained Turn Constraint
 V_turn = 548.538 # ft/s (325 knots) From Raymer of estimated sustained turn speed for fighter aircraft
@@ -171,7 +171,7 @@ TW_stall = stall_W_S
 
 
 # Design point
-TW_design = 0.328
+TW_design = 0.375
 WS_design = 72.30 # lbf/ft^2
 
 ## Optional Plot of TS vs WS Constraint Diagram 
@@ -191,20 +191,17 @@ plt.plot(WS, TW_cruise_a2a, label='Air-to-Air Dash (Ma = 1.6)')
 plt.plot(WS, TW_cruise_strike, label='Strike Dash (Ma = 0.85)')
 
 # Vertical constraints (W/S limits)
-plt.axvline(TW_takeoff, linestyle='-', label='Takeoff W/S Limit', color='yellow')
-plt.axvline(TW_landing, linestyle='-', label='Landing W/S Limit', color = 'purple')
-plt.axvline(TW_stall, linestyle='-', label='Stall W/S Limit', color = 'darkblue')
+plt.axvline(TW_takeoff, linestyle='-', label='Takeoff (Catapult)', color='darkgreen')
+plt.axvline(TW_landing, linestyle='-', label='Landing (Arresting Gear)', color = 'purple')
+plt.axvline(TW_stall, linestyle='-', label='Maneuver Stall (7g Min. Load Factor)', color = 'darkblue')
 # plt.axvline(TW_inst_turn, linestyle='-', label='Instantaneous Turn W/S Limit', color = 'cyan') # Looks wrong, commenting out for now, need to double check instantaneous turn constraint calculation
-
-# Design point
-plt.scatter(WS_design, TW_design, color='red', s=80, label='Design Point')
 
 plt.xlim(0,150)
 plt.ylim(0,1)
 
 plt.grid(True)
 plt.legend(loc = 'best')
-plt.show()
+
 
 plt.rcParams.update({
     "font.size": 14,
@@ -214,6 +211,28 @@ plt.rcParams.update({
     "ytick.labelsize": 14,
     "legend.fontsize": 12
 })
+
+# Determine the limiting curve between a2a dash and sustained turn
+TW_limit = np.maximum(TW_cruise_a2a, TW_turn)
+
+# Mask region to the left of takeoff W/S limit
+mask = WS <= TW_takeoff
+
+# Fill feasible region
+plt.fill_between(
+    WS,
+    TW_limit,
+    1,                       # top of plot (max T/W)
+    where=mask,
+    color='green',
+    alpha=0.25,
+    label='Valid Design Region'
+)
+
+# Design point
+plt.scatter(WS_design, TW_design, color='red', s=80, label='Design Point')
+
+plt.show()
 ## End of optional plot code
 
 # Takeoff Distance Check
