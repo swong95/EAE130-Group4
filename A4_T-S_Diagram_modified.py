@@ -38,12 +38,14 @@ cd_landing_gear = (CD0 + dCD0_lf+dCD0_gear) + (cl_landing_gear**2 / (np.pi * AR 
 
 
 # --- Given Constants ---
-AR = 3.36462 # Aspect Ratio
-s = 59.88512 # Span [ft]
-s_ref = 1053.94 # Reference Area [ft^2]
-S_wet = 2255.877 # Wetted Area [ft^2]
-c_f = 0.0040 # Skin Friction Coefficient 
-
+AR = 2.8815 # Aspect Ratio (WE UPDATED FROM CAD)
+s = 35.4 # Span [ft]
+# s_ref = 1053.94 # Reference Area [ft^2]
+# S_wet = 2255.877 # Wetted Area [ft^2]
+s_ref = 660 # Reference Area [ft^2] (UPDATED FROM CAD)
+S_wet = 1440.5 # Wetted Area [ft^2] (UPDATED FROM CAD)
+# c_f = 0.0040 # Skin Friction Coefficient 
+c_f = .00236 # Skin Friction Coefficient (UPDATED FROM CAD)
 # --- Other Constants ---
 rho_SL = 0.002377  # slugs/ft^3 (air density at sea level)
 rho_landing_rhoSL = 1 # density ratio (rho/rho_SL) for landing constraint calculation
@@ -52,7 +54,8 @@ g = 32.174 # ft/s^2 (gravity)
 
 # Calculate base C_D_0 from wetted area
 C_D_0_calc = c_f * (S_wet / s_ref)
-
+print("Calculated C_D_0 based on wetted area: ", C_D_0_calc)
+# C_D_0_calc = .00744
 
 # See drag_polars_fin.py for drag polars and drag polar calculations
 
@@ -85,30 +88,47 @@ landing_W_S = 0.5 * rho_SL * V_arrest**2 * C_L_max_landing
 
 k_s_to = 1.2
 k_s_approach = 1.1 
-C_D_0 = 0.01288
-W_to = 70000.0 # lbs
+# C_D_0 = 0.01288
+W_to = 60000.0 # lbs
 SEROC_to = 200 # ft/min
 SEROC_approach = 500 # ft/min
 Vs_to = np.sqrt(2*W_to / (rho_SL * s_ref * C_L_max_takeoff))
+print("Takeoff Velocity: " + str(round(Vs_to/1.6878, 2)) + " knots")
 Vs_approach = np.sqrt(2*W_to / (rho_SL * s_ref * C_L_max_landing))
+print("Approach Velocity: " + str(round(Vs_approach/1.6878, 2)) + " knots")
 G_to = (SEROC_to / 60) / (k_s_to * Vs_to)
 G_approach = (SEROC_approach / 60) / (k_s_approach * Vs_approach)
 e = 0.8 # (taking high end of oswald eff factor for clean config as estimate) 
-k = 1/(np.pi * e * AR)
-coef_1_climb = ((k_s_to**2 * C_D_0/C_L_max_takeoff) + k*(C_L_max_takeoff/k_s_to**2) + G_to) # Climb constraint for takeoff
-coef_2_climb = ((k_s_approach**2 * C_D_0/C_L_max_landing) + k*(C_L_max_landing/k_s_approach**2) + G_approach) # Climb constraint for approach
+# k = 1/(np.pi * e * AR)
+# coef_1_climb = ((k_s_to**2 * C_D_0/C_L_max_takeoff) + k*(C_L_max_takeoff/k_s_to**2) + G_to) # Climb constraint for takeoff
+# coef_2_climb = ((k_s_approach**2 * C_D_0/C_L_max_landing) + k*(C_L_max_landing/k_s_approach**2) + G_approach) # Climb constraint for approach
 
+# Changed climb constraints to what cooper recoommended (5.30 Raymer)
+q_climb = 0.5 * rho_SL * Vs_to**2
+coef_1_climb = q_climb * C_D_0_calc
+coef_2_climb = 1/(q_climb * np.pi * AR * e) 
+print("Climb Coefficients: ", coef_1_climb, " & ", coef_2_climb)
+
+q_approach = 0.5 * rho_SL * Vs_approach**2
+coef_1_approach_climb = q_approach * C_D_0_calc
+coef_2_approach_climb = 1/(q_approach * np.pi * AR * e)
+print("Baulked Landing Climb Coefficients: ", coef_1_approach_climb, " & ", coef_2_approach_climb)
 
 # Cruise / Dash
 # Using dash speed for air to air mission since assignment asks for dash speed
 V_dash_a2a = 589* 1.6878*1.6 ## ft/s (Speed) [Using Ma = 1.6 at 30,000 ft dash speed for Air to Air Combat]
-                     ## Speed of soud pulled from Engineers Edge Table for 30,000 ft
-V_dash_strike = 661 * 1.6878 * .85 ## ft/s (Speed) [Using Ma = .85 dash speed for Strike]
-                     ## Speed of sound pulled from Engineers Edge Table for sea level
+                     ## Speed of soud pulled from Engineers Edge Table for 30,000 
+V_dash_strike = 589* 1.6878*.85 ## ft/s (Speed) [Using Ma = .85 dash speed for Strike]
 rho_a2a = 0.000891  # slugs/ft^3 (air density at 30,000 ft)
-q = 1/2 * rho_a2a * V_dash_a2a**2
-q_strike = 1/2 * rho_SL * V_dash_strike**2
+rho_strike = rho_20000
+q_a2a = 1/2 * rho_a2a * V_dash_a2a**2
+q_strike = 1/2 * rho_strike * V_dash_strike**2
 e_dash = 0.8  # assuming clean config for dash
+
+a2a_coeff1 = q_a2a * C_D_0_calc
+a2a_coeff2 = 1/(q_a2a * np.pi * AR * e_dash)
+strike_coeff1 = q_strike * C_D_0_calc
+strike_coeff2 = 1/(q_strike * np.pi * AR * e_dash)
 
 # Stall Constraint
 C_L_max_clean = 1.8
@@ -124,15 +144,15 @@ print("Load factor for sustained turn: ", n)
 q_turn = 0.5 * rho_20000 * V_turn**2 # turning dynamic pressure at 20,000 ft
 turn_coeff1 = q_turn * C_D_0_calc 
 turn_coeff2 = n**2 / (q_turn * np.pi * AR * e_dash)
+print("Turn Coefficients: ", turn_coeff1, " & ", turn_coeff2)
 
 # Instantaneous Turn Constraint
 V_inst_turn = 350 * 1.6878 # ft/s From Raymer Instantaneous Turn Section
 C_L_max_inst_turn = 0.8 # From Raymer Instantaneous Turn Section
-n_inst_turn = 8 # From Raymer Instantaneous Turn Section
+n_inst_turn = 7 # From RFP design vertical load factor requirement
 rho_10000 = 0.0017556
 q_inst_turn = 0.5 * rho_10000 * V_inst_turn**2
-inst_turn_W_S = q_inst_turn*C_L_max_inst_turn/n_inst_turn
-
+inst_turn_W_S = (q_inst_turn*C_L_max_inst_turn/n_inst_turn) / 0.75
 # WS Plot
 WS = np.linspace(1,150,300)
 
@@ -140,19 +160,15 @@ TW_takeoff = takeoff_W_S
 # TW_landing = (rho_landing_rhoSL * C_L_max_takeoff) / (80 * Wl_Wto) * (s_land + s_a) * np.ones(30)
 TW_landing = landing_W_S
 print("TW_Landing:", TW_landing)
-TW_takeoff_climb = coef_1_climb * np.ones(len(WS))
-TW_approach_climb = coef_2_climb * np.ones(len(WS))
+TW_takeoff_climb = coef_1_climb/WS + coef_2_climb * WS + G_to
+TW_approach_climb = coef_1_approach_climb/WS + coef_2_approach_climb * WS + G_approach
 TW_turn = turn_coeff1*(1/WS) + turn_coeff2 * WS
-TW_inst_turn = inst_turn_W_S
-TW_cruise_a2a = (q * C_D_0_calc) / WS + (WS) / (q * np.pi * AR * e_dash)
-TW_cruise_strike = (q_strike * C_D_0_calc) / WS + (WS) / (q_strike * np.pi * AR * e_dash)
+TW_inst_turn = inst_turn_W_S 
+TW_cruise_a2a = a2a_coeff1 / WS + (WS) * a2a_coeff2
+TW_cruise_strike = strike_coeff1 / WS + (WS) * strike_coeff2
 TW_stall = stall_W_S
-a2a_cruise_coef_1 = q * C_D_0_calc
-a2a_cruise_coef_2 = 1 / (q * np.pi * AR * e_dash)
-strike_cruise_coef_1 = q_strike * C_D_0_calc
-strike_cruise_coef_2 = 1 / (q_strike * np.pi * AR * e_dash)
-print("a2a coefs 1 & 2: ", a2a_cruise_coef_1, " & ", a2a_cruise_coef_2)
-print("strike coefs 1 & 2: ", strike_cruise_coef_1, " & ", strike_cruise_coef_2)
+
+
 
 # Design point
 TW_design = 0.328
@@ -161,24 +177,24 @@ WS_design = 72.30 # lbf/ft^2
 ## Optional Plot of TS vs WS Constraint Diagram 
 plt.figure(figsize=(14,8))
 
-plt.title("Classical Constraint Diagram")
+plt.title("Constraint Diagram")
 plt.xlabel(r"Wing Loading $W/S$ (lb/ft$^2$)")
 plt.ylabel(r"Thrust-to-Weight $T/W$")
 
 # Horizontal constraints
 plt.plot(WS, TW_takeoff_climb, label='Takeoff Climb')
-plt.plot(WS, TW_approach_climb, label='Approach Climb')
+plt.plot(WS, TW_approach_climb, label='Baulked Landing Climb')
 
 # Curved constraints
-plt.plot(WS, TW_turn, label='Sustained Turn')
-plt.plot(WS, TW_cruise_a2a, label='Air-to-Air Dash')
-plt.plot(WS, TW_cruise_strike, label='Strike Dash')
+plt.plot(WS, TW_turn, label='Sustained Turn (8°/s at 325 kts)')
+plt.plot(WS, TW_cruise_a2a, label='Air-to-Air Dash (Ma = 1.6)')
+plt.plot(WS, TW_cruise_strike, label='Strike Dash (Ma = 0.85)')
 
 # Vertical constraints (W/S limits)
 plt.axvline(TW_takeoff, linestyle='-', label='Takeoff W/S Limit', color='yellow')
 plt.axvline(TW_landing, linestyle='-', label='Landing W/S Limit', color = 'purple')
 plt.axvline(TW_stall, linestyle='-', label='Stall W/S Limit', color = 'darkblue')
-plt.axvline(TW_inst_turn, linestyle='-', label='Instantaneous Turn W/S Limit', color = 'cyan')
+# plt.axvline(TW_inst_turn, linestyle='-', label='Instantaneous Turn W/S Limit', color = 'cyan') # Looks wrong, commenting out for now, need to double check instantaneous turn constraint calculation
 
 # Design point
 plt.scatter(WS_design, TW_design, color='red', s=80, label='Design Point')
@@ -736,7 +752,8 @@ for T_total_stall in T_stall_grid:
 
         stall_WS = 0.5 * rho_SL * V_stall_clean**2 * C_L_max_clean
 
-        S_stall_new = W0_stall / (stall_WS * (W_recovery / W0_stall))
+        S_stall_new = W0_stall / (stall_WS * (W_recovery / W0_stall))# Adjusting the stall condition to account for the reduced weight during recovery, which effectively increases the W/S at stall and thus reduces the required wing area.
+        # S_stall_new = W0_stall / (stall_WS * (0.5 * W_recovery / W0_stall))  
         print("Weight Fraction W_recovery/W0_stall: ", W_recovery / W0_stall)
         if abs(S_stall_new - S_stall_guess) / max(S_stall_guess, 1e-9) < stall_s_tol:
             S_stall_guess = S_stall_new
