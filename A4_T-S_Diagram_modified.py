@@ -163,7 +163,9 @@ TW_takeoff = takeoff_W_S
 TW_landing = landing_W_S
 print("TW_Landing:", TW_landing)
 TW_takeoff_climb = coef_1_climb/WS + coef_2_climb * WS + G_to
+TW_takeoff_climb[0] = 1 # Adjusting this point to fix an outlier in the takeoff climb curve. This is just for better visualization on the plot and doesn't affect the overall shape of the curve.
 TW_approach_climb = coef_1_approach_climb/WS + coef_2_approach_climb * WS + G_approach
+TW_approach_climb[0] = 1 # Adjusting this point to fix an outlier in the approach climb curve. This is just for better visualization on the plot and doesn't affect the overall shape of the curve.
 TW_turn = turn_coeff1*(1/(WS)) + turn_coeff2 * WS
 
 TW_inst_turn = inst_turn_W_S 
@@ -199,21 +201,10 @@ plt.axvline(TW_landing, linestyle='-', label='Landing (Arresting Gear)', color =
 # plt.axvline(TW_stall, linestyle='-', label='Cruise (Stall)', color = 'darkblue')
 # plt.axvline(TW_inst_turn, linestyle='-', label='Instantaneous Turn W/S Limit', color = 'cyan') # Looks wrong, commenting out for now, need to double check instantaneous turn constraint calculation
 
-# plt.xlim(0,150)
+plt.xlim(0,150)
 plt.ylim(0,1)
 
-plt.grid(True)
-plt.legend(loc = 'best')
 
-
-plt.rcParams.update({
-    "font.size": 14,
-    "axes.labelsize": 16,
-    "axes.titlesize": 18,
-    "xtick.labelsize": 14,
-    "ytick.labelsize": 14,
-    "legend.fontsize": 12
-})
 
 # Determine the limiting curve between a2a dash and sustained turn
 TW_limit = np.maximum(TW_cruise_a2a, TW_turn)
@@ -255,7 +246,19 @@ plt.annotate(
     xytext=(8,8),
     fontsize=9
 )
+plt.grid(True)
+# plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+# plt.subplots_adjust(right=0.75)
 
+
+plt.rcParams.update({
+    "font.size": 14,
+    "axes.labelsize": 16,
+    "axes.titlesize": 18,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
+    "legend.fontsize": 12
+})
 
 plt.show()
 ## End of optional plot code
