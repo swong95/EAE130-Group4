@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # constants and cd0 from openvsp
-AR = 3.36462
+AR = 2.8815 # Aspect Ratio (WE UPDATED FROM CAD)
 CD0 = 0.01359
 
 # efficiency factors for each configuration
@@ -38,7 +38,6 @@ cd_landing_gear = (CD0 + dCD0_lf+dCD0_gear) + (cl_landing_gear**2 / (np.pi * AR 
 
 
 # --- Given Constants ---
-AR = 2.8815 # Aspect Ratio (WE UPDATED FROM CAD)
 s = 35.4 # Span [ft]
 # s_ref = 1053.94 # Reference Area [ft^2]
 # S_wet = 2255.877 # Wetted Area [ft^2]
@@ -153,7 +152,7 @@ n_inst_turn = 7 # From RFP design vertical load factor requirement [lower end]
 rho_10000 = 0.0017556
 # rho_35000 = 0.7365e-3
 q_inst_turn = 0.5 * rho_10000 * V_inst_turn**2 # slug/(ft^2 * s)
-inst_turn_W_S = (q_inst_turn*C_L_max_inst_turn/n_inst_turn) / .85
+inst_turn_W_S = (q_inst_turn*C_L_max_inst_turn/n_inst_turn) / .85 # 0.85 factor approximates mid-mission weight
 
 
 # WS Plot
@@ -197,8 +196,8 @@ plt.plot(WS, TW_cruise_strike, label='Strike Dash (Ma = 0.9)')
 # Vertical constraints (W/S limits)
 plt.axvline(TW_takeoff, linestyle='-', label='Takeoff (Catapult)', color='darkgreen')
 plt.axvline(TW_landing, linestyle='-', label='Landing (Arresting Gear)', color = 'purple')
-plt.axvline(TW_stall, linestyle='-', label='Cruise (Stall)', color = 'darkblue')
-plt.axvline(TW_inst_turn, linestyle='-', label='Instantaneous Turn W/S Limit', color = 'cyan') # Looks wrong, commenting out for now, need to double check instantaneous turn constraint calculation
+# plt.axvline(TW_stall, linestyle='-', label='Cruise (Stall)', color = 'darkblue')
+# plt.axvline(TW_inst_turn, linestyle='-', label='Instantaneous Turn W/S Limit', color = 'cyan') # Looks wrong, commenting out for now, need to double check instantaneous turn constraint calculation
 
 # plt.xlim(0,150)
 plt.ylim(0,1)
@@ -219,8 +218,8 @@ plt.rcParams.update({
 # Determine the limiting curve between a2a dash and sustained turn
 TW_limit = np.maximum(TW_cruise_a2a, TW_turn)
 
-# Mask region to the left of takeoff W/S limit
-mask = WS <= TW_inst_turn
+# Mask region to the left of instantaneous turn W/S limit
+mask = WS <= TW_takeoff
 
 # Fill feasible region
 plt.fill_between(
@@ -523,24 +522,22 @@ print("W_payload_air2air: " + str(W_payload_a2a) + " lb")
 W_payload_strike = (num_JDAM*W_JDAM + num_AIM9X*W_AIM9X + W_avionics)  # lb
 print("W_payload_strike: " + str(W_payload_strike) + " lb")
 
-L_D_max = 9
+L_D_max = 11
 R = 700 * 2
 E = 20 / 60
 c = 0.8
 V = 589 * 0.85
 
 S_ht = 0
-S_vt = 136
-S_wet_fuselage = 687
-num_engines = 2
+S_vt = 112.693 # ft^2 (UPDATED FROM CAD)
+S_wet_fuselage = 339.275 # ft^2 (UPDATED FROM CAD) 
+num_engines = 1
 
 # Set grid of wing areas to analyze
 S_wing_grid = list(range(1, 6000, 1))  # Example range of wing areas to analyze
 
 TOGW_guess_init = 70000  # Initial guess for Takeoff Gross Weight in pounds
 T_total_guess_init = 15000 * num_engines  # Initial guess for total thrust in pounds-force
-
-T_W_approach_climb = coef_2_climb
 
 T_approach_climb_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
     S_wing_grid=S_wing_grid,
@@ -549,15 +546,14 @@ T_approach_climb_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, 
     num_engines=num_engines,
     S_ht=S_ht, S_vt=S_vt, S_wet_fuselage=S_wet_fuselage,
     W_crew=W_crew, W_payload=W_payload_a2a,
-    type = 1,
-    T_W_coef_1 = T_W_approach_climb,
-    T_W_coef_2 = 0,
+    type = 3,
+    T_W_coef_1 = coef_1_approach_climb,
+    T_W_coef_2 = coef_2_approach_climb,
     tol_T_rel=1e-6,
     max_iter_T=200,
     relax=1
 )
 
-T_W_takeoff_climb = coef_1_climb
 
 T_takeoff_climb_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
     S_wing_grid=S_wing_grid,
@@ -566,9 +562,9 @@ T_takeoff_climb_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, i
     num_engines=num_engines,
     S_ht=S_ht, S_vt=S_vt, S_wet_fuselage=S_wet_fuselage,
     W_crew=W_crew, W_payload=W_payload_a2a,
-    type = 1,
-    T_W_coef_1 = T_W_takeoff_climb,
-    T_W_coef_2 = 0,
+    type = 3,
+    T_W_coef_1 = coef_1_climb,
+    T_W_coef_2 = coef_2_climb,
     tol_T_rel=1e-6,
     max_iter_T=200,
     relax=1
@@ -630,20 +626,20 @@ T_strike_cruise_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, i
     relax=1
 )
 
-T_takeoff_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
-    S_wing_grid=S_wing_grid,
-    TOGW_guess_init=TOGW_guess_init,
-    T_total_guess_init=T_total_guess_init,
-    num_engines=num_engines,
-    S_ht=S_ht, S_vt=S_vt, S_wet_fuselage=S_wet_fuselage,
-    W_crew=W_crew, W_payload=W_payload_a2a,
-    type = 2,
-    T_W_coef_1 = T_W_takeoff_climb,
-    T_W_coef_2 = 0,
-    tol_T_rel=1e-6,
-    max_iter_T=200,
-    relax=1
-)
+# T_takeoff_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
+#     S_wing_grid=S_wing_grid,
+#     TOGW_guess_init=TOGW_guess_init,
+#     T_total_guess_init=T_total_guess_init,
+#     num_engines=num_engines,
+#     S_ht=S_ht, S_vt=S_vt, S_wet_fuselage=S_wet_fuselage,
+#     W_crew=W_crew, W_payload=W_payload_a2a,
+#     type = 2,
+#     T_W_coef_1 = T_W_takeoff_climb,
+#     T_W_coef_2 = 0,
+#     tol_T_rel=1e-6,
+#     max_iter_T=200,
+#     relax=1
+# )
 
 
 # ============================================================
@@ -855,7 +851,7 @@ print(T_inst_turn_valid)
 # ============================================
 
 # A3 Design Point
-TW_design = 0.328
+TW_design = 0.55
 WS_design = 72.30 # lbf/ft^2
 
 T_design = 25000 # lbf
