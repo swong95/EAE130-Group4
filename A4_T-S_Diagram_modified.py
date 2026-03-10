@@ -596,8 +596,8 @@ T_turn_curve[286] = 55000
 # Adjusting this point to fix an outlier in the turn curve, likely due to convergence issues in the inner loop for that S value. 
 # This is just for better visualization on the plot and doesn't affect the overall shape of the curve.
 
-a2a_coeff_1_cruise = a2a_cruise_coef_1
-a2a_coeff_2_cruise = a2a_cruise_coef_2
+a2a_coeff_1_cruise = a2a_coeff1
+a2a_coeff_2_cruise = a2a_coeff2
 T_a2a_cruise_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
     S_wing_grid=S_wing_grid,
     TOGW_guess_init=TOGW_guess_init,
@@ -613,8 +613,8 @@ T_a2a_cruise_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w
     relax=1
 )
 
-strike_coeff_1_cruise = strike_cruise_coef_1
-strike_coeff_2_cruise = strike_cruise_coef_2  
+strike_coeff_1_cruise = strike_coeff1
+strike_coeff_2_cruise = strike_coeff2  
 T_strike_cruise_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final, W0_hist_final = outer_loop_thrust_for_one_constraint(
     S_wing_grid=S_wing_grid,
     TOGW_guess_init=TOGW_guess_init,
