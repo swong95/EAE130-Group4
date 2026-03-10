@@ -525,7 +525,7 @@ print("W_payload_air2air: " + str(W_payload_a2a) + " lb")
 W_payload_strike = (num_JDAM*W_JDAM + num_AIM9X*W_AIM9X + W_avionics)  # lb
 print("W_payload_strike: " + str(W_payload_strike) + " lb")
 
-L_D_max = 11
+L_D_max = 10
 R = 700 * 2
 E = 20 / 60
 c = 0.8
@@ -886,20 +886,57 @@ plt.figure(figsize=(16,9))
 plt.title('Converged T vs S for All Constraints')
 plt.xlabel(r'Wing Area S (ft$^2$)')
 plt.ylabel(r'Total Thrust T (lbf)')
-plt.plot(S_actual_F18, T_actual_F18, label='Actual F/A-18 E/F Super Hornet', marker='x', markersize=10, color='red')
-plt.plot(S_F14,T_F14, label = 'Grumman F-14 Tomcat', marker = 'x', markersize=10,color='green')
-plt.plot(S_F18_CD,T_F18_CD, label = 'F/A-18 C/D Hornet', marker = 'x', markersize=10,color='orange')
-plt.plot(S_F35C,T_F35C, label = 'F-35C Lightning II', marker = 'x', markersize=10,color='purple')
-plt.plot(S_design_twinF414, T_design_twinF414, label='F/A-XX Design Point', marker='x', markersize=10, color='blue')
-plt.plot(S_wing_grid, T_approach_climb_curve, label='Approach Climb Constraint')
-plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb Constraint')
-plt.plot(S_wing_grid, T_turn_curve, label = 'Turn Constraint')
-plt.plot(S_inst_turn_curve, T_inst_turn_valid, label = 'Instantaneous Turn Constraint')
-plt.plot(S_wing_grid, T_a2a_cruise_curve, label = 'Air-to-Air Dash Constraint')
-plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
-plt.plot(S_stall_curve, T_stall_valid, label = 'Stall Constraint')
-plt.plot(S_landing_curve, T_landing_valid, label='Landing Constraint', linewidth=2)  # landing line
-plt.plot(S_TO_curve, T_TO_valid, label='Takeoff Constraint', linewidth=2)  # takeoff line
+# plt.plot(S_actual_F18, T_actual_F18, label='Actual F/A-18 E/F Super Hornet', marker='x', markersize=10, color='red')
+# plt.plot(S_F14,T_F14, label = 'Grumman F-14 Tomcat', marker = 'x', markersize=10,color='green')
+# plt.plot(S_F18_CD,T_F18_CD, label = 'F/A-18 C/D Hornet', marker = 'x', markersize=10,color='orange')
+# plt.plot(S_F35C,T_F35C, label = 'F-35C Lightning II', marker = 'x', markersize=10,color='purple')
+# plt.plot(S_design_twinF414, T_design_twinF414, label='F/A-XX Design Point', marker='x', markersize=10, color='blue')
+# T_takeoff_climb_curve[0] = 55000 # Adjusting this point to fix an outlier in the takeoff climb curve. This is just for better visualization on the plot and doesn't affect the overall shape of the curve.
+# T_approach_climb_curve[0] = 55000 # Adjusting this point to fix an outlier in the approach climb curve. This is just for better visualization on the plot and doesn't affect the overall shape of the curve.
+# plt.plot(S_wing_grid, T_approach_climb_curve, label='Baulked Landing Climb')
+# plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb')
+# plt.plot(S_wing_grid, T_turn_curve, label = 'Sustained Turn ')
+# # plt.plot(S_inst_turn_curve, T_inst_turn_valid, label = 'Instantaneous Turn Constraint')
+# plt.plot(S_wing_grid, T_a2a_cruise_curve, label = 'Air-to-Air Dash Constraint')
+# plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
+# # plt.plot(S_stall_curve, T_stall_valid, label = 'Stall Constraint')
+# plt.plot(S_landing_curve, T_landing_valid, label='Landing Constraint', linewidth=2)  # landing line
+# plt.plot(S_TO_curve, T_TO_valid, label='Takeoff Constraint', linewidth=2)  # takeoff line
+
+# Comparison aircraft
+plt.plot(S_actual_F18, T_actual_F18, label='F/A-18E/F Super Hornet', marker='x', markersize=10, color='red')
+plt.plot(S_F14, T_F14, label='F-14 Tomcat', marker='x', markersize=10, color='green')
+plt.plot(S_F18_CD, T_F18_CD, label='F/A-18C/D Hornet', marker='x', markersize=10, color='orange')
+plt.plot(S_F35C, T_F35C, label='F-35C Lightning II', marker='x', markersize=10, color='purple')
+
+# Design point
+plt.plot(S_design_twinF414, T_design_twinF414,
+         label='F/A-XX Design Point',
+         marker='x', markersize=10, color='blue')
+
+# Fix visualization outliers
+T_takeoff_climb_curve[132] = 55000
+T_approach_climb_curve[140] = 55000
+
+# Constraint curves
+plt.plot(S_wing_grid, T_takeoff_climb_curve, label='Takeoff Climb')
+
+plt.plot(S_wing_grid, T_approach_climb_curve, label='Baulked Landing Climb')
+
+plt.plot(S_wing_grid, T_turn_curve, label='Sustained Turn (10°/s at 325 kts)')
+
+plt.plot(S_wing_grid, T_a2a_cruise_curve, label='Air-to-Air Dash (Ma = 2)')
+
+plt.plot(S_wing_grid, T_strike_cruise_curve, label='Strike Dash (Ma = 0.95)')
+
+# Vertical constraints converted to TS form
+# plt.plot(S_inst_turn_curve, T_inst_turn_valid, label='Instantaneous Turn Limit')
+# plt.plot(S_stall_curve, T_stall_valid, label='Stall Limit')
+
+plt.plot(S_landing_curve, T_landing_valid, label='Landing Limit', linewidth=2)
+
+plt.plot(S_TO_curve, T_TO_valid, label='Takeoff Limit', linewidth=2)
+
 plt.xlim(50, 1000)   # realistic wing area range for a fighter (ft^2); F/A-18 is 500 ft^2
 y_max_plot = 55000 
 plt.ylim(0, y_max_plot) # realistic total thrust range (lbf); adjust if curves are cut off
@@ -916,6 +953,7 @@ plt.fill_between(
     alpha=0.2, 
     label='Feasible Region'
 )
-plt.legend(loc='best')
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+plt.subplots_adjust(right=0.75)
 plt.grid()
 plt.show()
