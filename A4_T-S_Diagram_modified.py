@@ -116,9 +116,9 @@ print("Baulked Landing Climb Coefficients: ", coef_1_approach_climb, " & ", coef
 
 # Cruise / Dash
 # Using dash speed for air to air mission since assignment asks for dash speed
-V_dash_a2a = 589* 1.6878*1.6 ## ft/s (Speed) [Using Ma = 1.6 at 30,000 ft dash speed for Air to Air Combat]
+V_dash_a2a = 589* 1.6878*2 ## ft/s (Speed) [Using Ma = 1.6 at 30,000 ft dash speed for Air to Air Combat] [CHANGED TO MA = 2 FOR DESIRED]
                      ## Speed of soud pulled from Engineers Edge Table for 30,000 
-V_dash_strike = 589* 1.6878*.85 ## ft/s (Speed) [Using Ma = .85 dash speed for Strike]
+V_dash_strike = 589* 1.6878*.9 ## ft/s (Speed) [Using Ma = .85 dash speed for Strike] [CHANGED TO MA = .9 FOR DESIRED]
 rho_a2a = 0.000891  # slugs/ft^3 (air density at 30,000 ft)
 rho_strike = rho_20000
 q_a2a = 1/2 * rho_a2a * V_dash_a2a**2
@@ -134,11 +134,11 @@ strike_coeff2 = 1/(q_strike * np.pi * AR * e_dash)
 C_L_max_clean = 1.8
 V_stall_clean = 131 * 1.6878 # rough estimate using RFP ##### Change later
 q_stall = 0.5 * rho_SL * V_stall_clean**2
-stall_W_S = q_stall * C_L_max_clean/.78
+stall_W_S = q_stall * C_L_max_clean
 
 # Sustained Turn Constraint
 V_turn = 548.538 # ft/s (325 knots) From Raymer of estimated sustained turn speed for fighter aircraft
-phi = 8 # deg/s turn rate, RFP
+phi = 10 # deg/s turn rate, RFP [changed to desired instead of minimum]
 n = np.sqrt(((phi*(np.pi/180))*V_turn/g)**2 + 1) # load factor for sustained turn 
 print("Load factor for sustained turn: ", n)
 q_turn = 0.5 * rho_20000 * V_turn**2 # turning dynamic pressure at 20,000 ft
@@ -148,11 +148,14 @@ print("Turn Coefficients: ", turn_coeff1, " & ", turn_coeff2)
 
 # Instantaneous Turn Constraint
 V_inst_turn = 350 * 1.6878 # ft/s From Raymer Instantaneous Turn Section
-C_L_max_inst_turn = 0.8 # From Raymer Instantaneous Turn Section
-n_inst_turn = 7 # From RFP design vertical load factor requirement
+C_L_max_inst_turn = 1.5 # From Raymer Instantaneous Turn Section  [Raymer CL_max with leading edge flaps pg 96]
+n_inst_turn = 7 # From RFP design vertical load factor requirement [lower end]
 rho_10000 = 0.0017556
-q_inst_turn = 0.5 * rho_10000 * V_inst_turn**2
-inst_turn_W_S = (q_inst_turn*C_L_max_inst_turn/n_inst_turn) / 0.75
+# rho_35000 = 0.7365e-3
+q_inst_turn = 0.5 * rho_10000 * V_inst_turn**2 # slug/(ft^2 * s)
+inst_turn_W_S = (q_inst_turn*C_L_max_inst_turn/n_inst_turn) / .85
+
+
 # WS Plot
 WS = np.linspace(1,150,300)
 
@@ -162,7 +165,8 @@ TW_landing = landing_W_S
 print("TW_Landing:", TW_landing)
 TW_takeoff_climb = coef_1_climb/WS + coef_2_climb * WS + G_to
 TW_approach_climb = coef_1_approach_climb/WS + coef_2_approach_climb * WS + G_approach
-TW_turn = turn_coeff1*(1/WS) + turn_coeff2 * WS
+TW_turn = turn_coeff1*(1/(WS)) + turn_coeff2 * WS
+
 TW_inst_turn = inst_turn_W_S 
 TW_cruise_a2a = a2a_coeff1 / WS + (WS) * a2a_coeff2
 TW_cruise_strike = strike_coeff1 / WS + (WS) * strike_coeff2
@@ -171,7 +175,7 @@ TW_stall = stall_W_S
 
 
 # Design point
-TW_design = 0.375
+TW_design = 0.55
 WS_design = 72.30 # lbf/ft^2
 
 ## Optional Plot of TS vs WS Constraint Diagram 
@@ -186,17 +190,17 @@ plt.plot(WS, TW_takeoff_climb, label='Takeoff Climb')
 plt.plot(WS, TW_approach_climb, label='Baulked Landing Climb')
 
 # Curved constraints
-plt.plot(WS, TW_turn, label='Sustained Turn (8°/s at 325 kts)')
-plt.plot(WS, TW_cruise_a2a, label='Air-to-Air Dash (Ma = 1.6)')
-plt.plot(WS, TW_cruise_strike, label='Strike Dash (Ma = 0.85)')
+plt.plot(WS, TW_turn, label='Sustained Turn (10°/s at 325 kts)')
+plt.plot(WS, TW_cruise_a2a, label='Air-to-Air Dash (Ma = 2)')
+plt.plot(WS, TW_cruise_strike, label='Strike Dash (Ma = 0.9)')
 
 # Vertical constraints (W/S limits)
 plt.axvline(TW_takeoff, linestyle='-', label='Takeoff (Catapult)', color='darkgreen')
 plt.axvline(TW_landing, linestyle='-', label='Landing (Arresting Gear)', color = 'purple')
-plt.axvline(TW_stall, linestyle='-', label='Maneuver Stall (7g Min. Load Factor)', color = 'darkblue')
-# plt.axvline(TW_inst_turn, linestyle='-', label='Instantaneous Turn W/S Limit', color = 'cyan') # Looks wrong, commenting out for now, need to double check instantaneous turn constraint calculation
+plt.axvline(TW_stall, linestyle='-', label='Cruise (Stall)', color = 'darkblue')
+plt.axvline(TW_inst_turn, linestyle='-', label='Instantaneous Turn W/S Limit', color = 'cyan') # Looks wrong, commenting out for now, need to double check instantaneous turn constraint calculation
 
-plt.xlim(0,150)
+# plt.xlim(0,150)
 plt.ylim(0,1)
 
 plt.grid(True)
@@ -216,7 +220,7 @@ plt.rcParams.update({
 TW_limit = np.maximum(TW_cruise_a2a, TW_turn)
 
 # Mask region to the left of takeoff W/S limit
-mask = WS <= TW_takeoff
+mask = WS <= TW_inst_turn
 
 # Fill feasible region
 plt.fill_between(
@@ -231,6 +235,28 @@ plt.fill_between(
 
 # Design point
 plt.scatter(WS_design, TW_design, color='red', s=80, label='Design Point')
+
+WS_f18 = 127.0   # lb/ft^2
+TW_f18 = 0.93
+
+plt.scatter(
+    WS_f18,
+    TW_f18,
+    s=120,
+    marker='*',
+    color='black',
+    zorder=5,
+    label='F/A-18E/F Super Hornet'
+)
+
+plt.annotate(
+    'F/A-18E/F',
+    (WS_f18, TW_f18),
+    textcoords="offset points",
+    xytext=(8,8),
+    fontsize=9
+)
+
 
 plt.show()
 ## End of optional plot code
