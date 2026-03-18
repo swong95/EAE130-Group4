@@ -25,11 +25,14 @@ num_JDAM = 4
 W_payload = num_AIM120C*W_AIM120C + num_AIM9X*W_AIM9X + W_avionics
 
 # Mission parameters
-L_D_max = 10
+L_D_max = 12
+L_D_norm = 0.866*L_D_max
 R = 700*2          # nm
 E = 20/60          # hr
 c = 0.8            # lb/(lbf*hr)
 V = 589*0.85       # knots
+FH = (R / V)+ 0.25 # flight hours = range / cruise velocity + standard tolerance allowance time 
+BH = FH + 0.3 # block hours. = flight hours + ground ops 
 
 # ----------------------
 # Functions for Weight/Fuel
@@ -114,7 +117,32 @@ C_RDTE = H_E * R_E + H_T * R_T + H_M * R_M + H_Q * R_Q + C_delv + C_flt
 C_flyaway = ((H_M * R_M + H_Q * R_Q + C_mfg) / Quant_p) + (C_eng * N_eng_per_ac) + C_avionics
 Total_cost = C_RDTE + Quant_p * C_flyaway
 
-# ----------------------
+# fuel costs
+SFC = 0.8 # from A4 code, specific fuel consumption lb/lbfhr 
+W_midflight = W0 - 0.5*W_fuel
+T_cruise = W_midflight / L_D_norm
+rho_fuel = 6.7 # lb/gal gives range of  6.47-7.01 lb/U.S. gallon for JP-* fuel  
+fuel_burn = SFC * T_cruise / rho_fuel # average fuel burn rate
+FH_YR_AC = 500 # upper range for fighters, flight hrs/ year/ annual costs
+fuel_price = 2.14 # dollars/gallon as of march 17.... to be changed due to irl circumstances.
+C_annual_fuel = fuel_burn * FH_YR_AC * fuel_price
+
+# maintainence costs
+MMH_FH = 20 # upper range for fighter 
+Maint_labor_costs = 150 # 150 per hor
+C_annual_maint_labor = MMH_FH * FH_YR_AC * Maint_labor_costs
+Crew_ratio = 1.1 # from raymer table 18.1
+C_less_engine = C_flyaway - C_eng 
+C_mat = 3.3*CEF*Crew_ratio*(C_less_engine/10**6)+7.04+(58*((C_eng/10**6)-13)) * FH_YR_AC  # annual material costs
+C_annual_maint = C_annual_maint_labor + C_mat
+
+# crew costs 
+C_crew_BH = ((35*(V_max*W0/10**5)**0.3)+84) * CEF # dollar per block hour pg 512 raymer eqn 18.10 for 2 man crew
+C_annual_crew = C_crew_BH * (BH/FH) * FH_YR_AC
+
+DOC = C_annual_crew + C_annual_fuel + C_annual_maint
+
+Total_DOC = Total_cost + DOC
 # Print Results
 # ----------------------
 print(f"Estimated Empty Weight: {W_empty:,.2f} lb")
@@ -124,4 +152,9 @@ print(f"Takeoff Gross Weight (W0): {W0:,.2f} lb\n")
 
 print(f"Total RDT&E Costs: ${C_RDTE:,.2f}")
 print(f"Unit Flyaway Cost: ${C_flyaway:,.2f}")
-print(f"Total Costs ({Quant_p} units): ${Total_cost:,.2f}")
+print(f"Total Costs, RDT&E and Flyaway for ({Quant_p} units): ${Total_cost:,.2f}")
+print(f"Annual Fuel Costs per unit: ${C_annual_fuel:,.2f}")
+print(f"Annual Crew Costs per unit: ${C_annual_crew:,.2f}")
+print(f"Annual Maintainence Labor Costs per unit: ${C_annual_maint:,.2f}")
+print(f"Annual Direct Operating Cost per unit: ${DOC:,.2f}")
+print(f"Total Costs, RDT&E, Flyaway and DOC for ({Quant_p} units): ${Total_DOC:,.2f}")
