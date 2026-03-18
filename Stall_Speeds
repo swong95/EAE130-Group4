@@ -1,0 +1,45 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# constants
+WS_design = 72.30 # lbf/ft^2 <-- from design point
+s_ref = 600 # Reference Area [ft^2] (UPDATED FROM CAD)
+rho_SL = 0.002377  # slugs/ft^3 (air density at sea level)
+rho_30k = 0.0008893  # slugs/ft^3 (air density at 30,000 ft.)
+g = 32.174 # ft/s^2 (gravity)
+
+# CL max of clean, takeoff, landing
+C_L_max_clean = 1.8
+C_L_max_takeoff = 2 # CL_max for takeoff, estimate from Roskam (Table from Slide 11 in 06-PreliminarySizing_Part2.pdf)
+C_L_max_landing = 2.1  # CL_max for landing, estimate from Roskam (Table from Slide 11 in 06-PreliminarySizing_Part2.pdf)
+
+# CL max of instantaneous turn
+V_inst_turn = 350 * 1.6878 # ft/s From Raymer Instantaneous Turn Section
+C_L_max_inst_turn = 1.5 # From Raymer Instantaneous Turn Section  [Raymer CL_max with leading edge flaps pg 96]
+n_inst_turn = 7 # From RFP design vertical load factor requirement [lower end]
+
+# CL max of sustained turn (same as instantaneous turn)
+V_turn = 548.538 # ft/s (325 knots) From Raymer of estimated sustained turn speed for fighter aircraft
+phi = 10 # deg/s turn rate, RFP [changed to desired instead of minimum]
+n = np.sqrt(((phi*(np.pi/180))*V_turn/g)**2 + 1) # load factor for sustained turn
+
+# stall speeds
+Vstall_clean = np.sqrt(2 * (WS_design) / (rho_30k * C_L_max_clean)) # ft/s
+Vstall_takeoff = np.sqrt(2 * (WS_design) / (rho_SL * C_L_max_takeoff)) # ft/s
+Vstall_landing = np.sqrt(2 * (WS_design) / (rho_SL * C_L_max_landing)) # ft/s
+Vstall_sustained_turn = np.sqrt((2 * n * WS_design) / (rho_30k * C_L_max_inst_turn)) # ft/s
+Vstall_inst_turn = np.sqrt((2 * n_inst_turn * WS_design) / (rho_30k * C_L_max_inst_turn)) # ft/s
+
+# ft/s --> knots
+Vstall_clean_kn = Vstall_clean / 1.688
+Vstall_takeoff_kn = Vstall_takeoff / 1.688
+Vstall_landing_kn = Vstall_landing / 1.688
+Vstall_sustained_turn_kn = Vstall_sustained_turn / 1.688
+Vstall_inst_turn_kn = Vstall_inst_turn / 1.688
+
+# results
+print(f"Clean Stall Speed: {Vstall_clean_kn:.2f} knots")
+print(f"Takeoff Stall Speed: {Vstall_takeoff_kn:.2f} knots")
+print(f"Landing Stall Speed: {Vstall_landing_kn:.2f} knots")
+print(f"Sustained Turn Stall Speed: {Vstall_sustained_turn_kn:.2f} knots")
+print(f"Instaneous Turn Stall Speed: {Vstall_inst_turn_kn:.2f} knots")
