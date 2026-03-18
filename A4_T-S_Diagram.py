@@ -254,12 +254,6 @@ TW_design = 0.328
 WS_design = 72.30 # lbf/ft^2
 
 # Takeoff Distance Check
-#TO distance
-W_to = 66400
-# T_to = 44000 # Using F-18 e/f engines, 13000 per engine
-F_to = 0.8*3*W_to
-W_T_to = 0.328
-d_TO = (k_s_to**2/32.2) * (W_to/s_ref)/(rho_SL*C_L_max_takeoff*(W_T_to+(F_to/W_to)))
 
 
 
@@ -527,7 +521,7 @@ S_wet_fuselage = 687
 num_engines = 2
 
 # Set grid of wing areas to analyze
-S_wing_grid = list(range(1, 6000, 1))  # Example range of wing areas to analyze
+S_wing_grid = list(range(0, 6000, 1))  # Example range of wing areas to analyze
 
 TOGW_guess_init = 70000  # Initial guess for Takeoff Gross Weight in pounds
 T_total_guess_init = 15000 * num_engines  # Initial guess for total thrust in pounds-force
@@ -583,10 +577,6 @@ T_turn_curve, W0_curve, n_iter_T, T_hist_allS, W0_final, wconv_final, it_w_final
     max_iter_T=200,
     relax=1
 )
-
-T_turn_curve[286] = 55000 
-# Adjusting this point to fix an outlier in the turn curve, likely due to convergence issues in the inner loop for that S value. 
-# This is just for better visualization on the plot and doesn't affect the overall shape of the curve.
 
 a2a_coeff_1_cruise = a2a_cruise_coef_1
 a2a_coeff_2_cruise = a2a_cruise_coef_2
@@ -710,71 +700,14 @@ T_landing_valid  = np.array(T_landing_valid)
 # END LANDING LENGTH CONSTRAINT
 # ============================================================
 
-# ============================================================
-# TAKEOFF LENGTH CONSTRAINT
-# ============================================================
-C_L_max_TO = 2
-F_catapult_avg = 0.8 * 3 * W0_final
-d_max_TO = 300 # ft
-max_TO_iter = 100
-TO_s_tol = 1e-5
-T_TO_grid = np.linspace(5000, 120000, 500)
-
-S_TO_curve = []
-T_TO_valid = []
-
-for T_total_TO in T_TO_grid:
-    T_0_TO = T_total_TO / num_engines
-
-    S_TO_guess = s_ref
-    
-    wconv_TO = False
-    for j in range(max_TO_iter):
-        W0_TO, wconv_TO, j, j = inner_loop_weight(
-            TOGW_guess_init,
-            S_TO_guess, S_ht, S_vt, S_wet_fuselage,
-            num_engines, W_crew, W_payload_a2a, T_0_TO
-        )
-
-        W_TO = W0_TO
-        S_TO_new = (k_s_to**2 * W_TO**2)/(rho_SL*C_L_max_TO*g*(T_total_TO + F_catapult_avg)*d_max_TO)
-
-        if abs(S_TO_new - S_TO_guess) / max(S_TO_guess, 1e-9) < TO_s_tol:
-            S_TO_guess = S_TO_new
-            break
-
-        S_TO_guess = S_TO_new
-    
-    if wconv_TO:
-        S_TO_curve.append(S_TO_guess)
-        T_TO_valid.append(T_total_TO)
-
-S_TO_curve = np.array(S_TO_curve)
-T_TO_valid = np.array(T_TO_valid)
-
-# =================================================
-# END TAKEOFF CONSTRAINT
-# =================================================
-
-
 # A3 Design Point
 TW_design = 0.328
 WS_design = 72.30 # lbf/ft^2
 
-T_design = 25000 # lbf
-S_design = 600 # ft^2
+T_design = TW_design * 66000
+S_design = 66000 / WS_design
 
-T_actual_F18 = 44000
-S_actual_F18 = 500
 
-T_F14 = 53900
-S_F14 = 565
-
-T_F18_CD = 35500
-S_F18_CD = 410
-
-T_F35C = 52000
-S_F35C = 668
 # Deciding if loops converged or not
 print('Inner loop never iterated more than ',max(it_w_final), ' times, which is less than the chosen max of 200 meaning the loop converged.')
 print('Outer loop never iterated more than ',max(n_iter_T), ' times, which is less than the chosen max of 200 meaning the loop converged.')
@@ -784,30 +717,29 @@ T_actual_F18 = 44000
 S_actual_F18 = 500
 print(f'Actual T for F-18: {T_actual_F18} lbf, Actual S for F-18: {S_actual_F18} ft^2')
 
-T_design_twinF414 = T_design 
+T_design_twinF414 = T_design # 22,000 lbf per GE F-414-400
 S_design_twinF414 = S_design
 plt.figure(figsize=(16,9))
-plt.title('Converged T vs S for All Constraints')
-plt.xlabel(r'Wing Area S (ft$^2$)')
-plt.ylabel(r'Total Thrust T (lbf)')
+plt.title('Converged T vs S for Approach Climbing Constraint')
+plt.xlabel("Wing Area S (ft^2)")
+plt.ylabel("Total Thrust T (lbf)")
 plt.plot(S_actual_F18, T_actual_F18, label='Actual F/A-18 E/F Super Hornet', marker='x', markersize=10, color='red')
-plt.plot(S_F14,T_F14, label = 'Grumman F-14 Tomcat', marker = 'x', markersize=10,color='green')
-plt.plot(S_F18_CD,T_F18_CD, label = 'F/A-18 C/D Hornet', marker = 'x', markersize=10,color='orange')
-plt.plot(S_F35C,T_F35C, label = 'F-35C Lightning II', marker = 'x', markersize=10,color='purple')
 plt.plot(S_design_twinF414, T_design_twinF414, label='F/A-XX Design Point', marker='x', markersize=10, color='blue')
+# Calculate the 'S' required for your fixed takeoff wing loading
+# S = W / (W/S_limit)
+S_takeoff_limit = W0_final / takeoff_W_S 
+
+plt.axvline(x=S_takeoff_limit, color='blue', linestyle='--', label='Catapult Takeoff Limit')
 plt.plot(S_wing_grid, T_approach_climb_curve, label='Approach Climb Constraint')
 plt.plot(S_wing_grid, T_takeoff_climb_curve, label = 'Takeoff Climb Constraint')
 plt.plot(S_wing_grid, T_turn_curve, label = 'Turn Constraint')
 plt.plot(S_wing_grid, T_a2a_cruise_curve, label = 'Air-to-Air Dash Constraint')
 plt.plot(S_wing_grid, T_strike_cruise_curve, label = 'Strike Dash Constraint')
 plt.plot(S_landing_curve, T_landing_valid, label='Landing Constraint', linewidth=2)  # landing line
-plt.plot(S_TO_curve, T_TO_valid, label='Takeoff Constraint', linewidth=2)  # takeoff line
-plt.xlim(50, 1000)   # realistic wing area range for a fighter (ft^2); F/A-18 is 500 ft^2
-y_max_plot = 55000 
+plt.xlim(50, 1500)   # realistic wing area range for a fighter (ft^2); F/A-18 is 500 ft^2
+y_max_plot = 45000 # i dropped ylim from 60k to 45k since turn constraint doesnt extend up to 60k
 plt.ylim(0, y_max_plot) # realistic total thrust range (lbf); adjust if curves are cut off
 T_limiting = np.maximum(T_turn_curve, T_strike_cruise_curve)
-T_limiting = np.maximum(T_limiting, T_approach_climb_curve)
-T_limiting = np.maximum(T_limiting, T_a2a_cruise_curve)
 
 plt.fill_between(
     S_wing_grid, 
