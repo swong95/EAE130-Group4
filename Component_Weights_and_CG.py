@@ -182,7 +182,10 @@ print("Handling Gear Weight:", W_handgear)
 W_canopy = 200 # lb based off F22 rough weight
 W_pilot = 200 #lb
 W_arrgear = 0.008*W_dg
+print("Arresting Gear Weight:", W_arrgear)
 W_catgear = 0.003*W_dg
+print("Catapult Gear Weight:", W_catgear)
+
 W_AIM120C = 358         # lb (from: https://www.navair.navy.mil/product/AMRAAM)
 W_AIM9X  = 186          # lb (from: https://www.navair.navy.mil/product/AIM-9X-Sidewinder)
 W_JDAM   = 1015         # lb (from: https://en.wikipedia.org/wiki/Mark_83_bomb)
@@ -197,7 +200,7 @@ W_py_JDAM   = 121.8
 # ==================================================================================================================
 # CG Calcs
 # ==================================================================================================================
-origin_offset = 6.628 # ft x direction offset to nose of plane
+origin_offset = 6.4 # ft x direction offset to nose of plane
 
 W_structures = W_wing + W_vt+ W_fuselage+W_ais+W_canopy+W_mlg+W_nlg+W_ensect+W_handgear+W_arrgear+W_catgear
 print("Structures Group Weight:", W_structures)
@@ -227,6 +230,8 @@ W_all_min_fuel = W_structures+W_propulsion+W_equipment_a2a+W_useful
 W_fuel = W_dg-W_all_min_fuel
 print("Fuel Weight:", W_fuel)
 
+W_useful_report = W_useful + W_fuel
+print("Report Useful Group Weight:", W_useful_report)
 
 W_empty_payload = W_structures+W_propulsion+W_equipment_static+W_useful+W_fuel
 W_total_a2a = W_structures+W_propulsion+W_equipment_a2a+W_useful+W_fuel
@@ -254,6 +259,10 @@ xCG_JDAM = 22.207+ origin_offset
 xCG_AIM120C = 23.014 + origin_offset
 xCG_AIM9X = 21.421 + origin_offset
 
+xCG_arr = np.array([xCG_wing, xCG_vt, xCG_fuselage, xCG_ais, xCG_canopy, 
+                    xCG_en, xCG_fuelsystanks, xCG_furn, xCG_avionics, xCG_pilot,
+                      xCG_fuel, xCG_nlg, xCG_mlg, xCG_arrgear, xCG_JDAM, xCG_AIM120C, xCG_AIM9X ])
+print(xCG_arr)
 # =========================
 # Moments
 lump_wing = xCG_wing*(W_wing)
@@ -262,7 +271,7 @@ lump_fuselage = xCG_fuselage*(W_fuselage+W_firewall)
 lump_furn = xCG_furn*(W_furn+W_flightcont+W_instr)
 lump_ais = xCG_ais*(W_ais+W_hydraulics+W_elec+W_acai+W_encontrols+W_encool+W_oilcool+W_starter)
 lump_canopy = xCG_canopy*W_canopy
-lump_en = xCG_en*(W_en+W_emounts+W_tailpipe)
+lump_en = xCG_en*(W_en+W_emounts+W_tailpipe+W_ensect)
 lump_fuelsystanks = xCG_fuelsystanks*W_fuelsystanks
 lump_pylons = (xCG_AIM120C*num_AIM120C*W_py_AIM120C) + (xCG_AIM9X*num_AIM9X*W_py_AIM9X) + (xCG_JDAM*num_JDAM*W_py_JDAM)
 lump_nlg = xCG_nlg*(W_nlg+W_catgear+W_handgear)
@@ -319,3 +328,15 @@ print("xCG_total_a2a_percent", xCG_total_a2a_percent)
 
 xCG_total_strike_percent = (xCG_total_strike-LEMAC)/MAC
 print("xCG_total_strike_percent:", xCG_total_strike_percent)
+
+xCG_strike_empty = xCG_total_strike_percent - xCG_empty_percent
+print("strike to empty %:", xCG_strike_empty)
+
+xCG_a2a_empty = xCG_total_a2a_percent - xCG_empty_percent
+print("aa2a to empty %:", xCG_a2a_empty)
+
+xCG_strike_no_payload = xCG_total_strike_percent - xCG_empty_payload_percent
+print("strike to no payload %:", xCG_strike_no_payload)
+
+xCG_a2a_no_payload = xCG_total_a2a_percent - xCG_empty_payload_percent
+print("a2a to no payload %:", xCG_a2a_no_payload)
