@@ -317,16 +317,16 @@ print("xCG strike half payload + half fuel:", xCG_mid_strike)
 LEMAC = 12.844
 LEMAC = LEMAC + origin_offset
 
-xCG_empty_percent = (xCG_empty-LEMAC)/MAC
+xCG_empty_percent = (xCG_empty-LEMAC)/MAC * 100
 print("xCG_empty_percent:", xCG_empty_percent)
 
-xCG_empty_payload_percent = (xCG_empty_payload-LEMAC)/MAC
+xCG_empty_payload_percent = (xCG_empty_payload-LEMAC)/MAC * 100
 print("xCG_empty_payload", xCG_empty_payload_percent)
 
-xCG_total_a2a_percent = (xCG_total_a2a-LEMAC)/MAC
+xCG_total_a2a_percent = (xCG_total_a2a-LEMAC)/MAC * 100
 print("xCG_total_a2a_percent", xCG_total_a2a_percent)
 
-xCG_total_strike_percent = (xCG_total_strike-LEMAC)/MAC
+xCG_total_strike_percent = (xCG_total_strike-LEMAC)/MAC * 100
 print("xCG_total_strike_percent:", xCG_total_strike_percent)
 
 xCG_strike_empty = xCG_total_strike_percent - xCG_empty_percent
