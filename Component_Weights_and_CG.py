@@ -25,7 +25,7 @@ L_t = 8.72490 # length tail ft
 H_tH_v = 0 # no horizontal tail
 
 
-W_dg = 43200 # Design Weight (Place holder change later)
+W_dg = 51908.0 # Design Weight (From A1_KevTestCode.py)
 limloadf = 7 # g
 N_z = 1.5 * limloadf # Ultimate load factor (R)
 S_w = 600 # ft^2 Trapezoidal Wing Area
@@ -226,18 +226,21 @@ W_useful = W_pilot + (num_AIM120C*W_py_AIM120C) + (num_AIM9X*W_py_AIM9X) + (num_
 W_empty = W_structures+W_propulsion+W_equipment_static
 print("Empty Weigt:", W_empty)
 
-W_all_min_fuel = W_structures+W_propulsion+W_equipment_a2a+W_useful
-W_fuel = W_dg-W_all_min_fuel
-print("Fuel Weight:", W_fuel)
+# W_all_min_fuel = W_structures+W_propulsion+W_equipment_a2a+W_useful
+# W_fuel = W_dg-W_all_min_fuel
+W_fuel_a2a = 18967.3 #lbf 
+W_fuel_strike = 20191.6 #lbf 
+# print("Fuel Weight:", W_fuel)
 
-W_useful_report = W_useful + W_fuel
+W_useful_report = W_useful + W_fuel_a2a
 print("Report Useful Group Weight:", W_useful_report)
 
-W_empty_payload = W_structures+W_propulsion+W_equipment_static+W_useful+W_fuel
-W_total_a2a = W_structures+W_propulsion+W_equipment_a2a+W_useful+W_fuel
-W_total_strike = W_structures+W_propulsion+W_equipment_strike+W_useful+W_fuel
-W_midfuel_midpayload_a2a = W_structures+W_propulsion+W_equipment_static+W_useful+(0.5*W_payload_a2a)+(0.6*W_fuel)
-W_midfuel_midpayload_strike = W_structures+W_propulsion+W_equipment_static+W_useful+(0.5*W_payload_strike)+(0.6*W_fuel)
+W_empty_payload_a2a = W_structures+W_propulsion+W_equipment_static+W_useful+W_fuel_a2a
+W_empty_payload_strike = W_structures+W_propulsion+W_equipment_static+W_useful+W_fuel_strike
+W_total_a2a = W_structures+W_propulsion+W_equipment_a2a+W_useful+W_fuel_a2a
+W_total_strike = W_structures+W_propulsion+W_equipment_strike+W_useful+W_fuel_strike
+W_midfuel_midpayload_a2a = W_structures+W_propulsion+W_equipment_static+W_useful+(0.5*W_payload_a2a)+(0.6*W_fuel_a2a)
+W_midfuel_midpayload_strike = W_structures+W_propulsion+W_equipment_static+W_useful+(0.5*W_payload_strike)+(0.6*W_fuel_strike)
 # ========================
 # xCG Locations
 xCG = + origin_offset
@@ -262,7 +265,7 @@ xCG_AIM9X = 21.421 + origin_offset
 xCG_arr = np.array([xCG_wing, xCG_vt, xCG_fuselage, xCG_ais, xCG_canopy, 
                     xCG_en, xCG_fuelsystanks, xCG_furn, xCG_avionics, xCG_pilot,
                       xCG_fuel, xCG_nlg, xCG_mlg, xCG_arrgear, xCG_JDAM, xCG_AIM120C, xCG_AIM9X ])
-print(xCG_arr)
+# print(xCG_arr)
 # =========================
 # Moments
 lump_wing = xCG_wing*(W_wing)
@@ -282,25 +285,31 @@ lump_arrgear = xCG_arrgear*W_arrgear
 lump_pilot = xCG_pilot*W_pilot
 lump_payload_a2a = (xCG_AIM120C*num_AIM120C*W_AIM120C) + (xCG_AIM9X*num_AIM9X*W_AIM9X)
 lump_payload_strike = (xCG_JDAM*num_JDAM*W_JDAM) + (xCG_AIM9X*num_AIM9X*W_AIM9X)
-lump_fuel = xCG_fuelsystanks*W_fuel
+lump_fuel_a2a = xCG_fuelsystanks*W_fuel_a2a
+lump_fuel_strike = xCG_fuelsystanks*W_fuel_strike
 
 # =================================
 lump_mid_payload_a2a = (xCG_AIM120C*0.5*num_AIM120C*W_AIM120C) + (xCG_AIM9X*0.5*num_AIM9X*W_AIM9X)
 lump_mid_payload_strike = (xCG_JDAM*0.5*num_JDAM*W_JDAM) + (xCG_AIM9X*0.5*num_AIM9X*W_AIM9X)
 # ======================================================================
 lump_static = lump_wing+lump_vt+lump_fuselage+lump_furn+lump_ais+lump_canopy+lump_en+lump_fuelsystanks+lump_pylons+lump_nlg+lump_mlg+lump_arrgear
-lump_total_a2a = lump_static+lump_payload_a2a+lump_pilot+lump_fuel
-lump_total_strike = lump_static+lump_payload_strike+lump_pilot+lump_fuel
-lump_empty_payload = lump_static+lump_pilot+lump_fuel
-lump_empty = lump_static
-lump_midmid_a2a = lump_static+lump_pilot+lump_mid_payload_a2a+(0.5*lump_fuel)
-lump_midmid_strike = lump_static+lump_pilot+lump_mid_payload_strike+(0.5*lump_fuel)
+lump_total_a2a = lump_static+lump_payload_a2a+lump_pilot+lump_fuel_a2a
+lump_total_strike = lump_static+lump_payload_strike+lump_pilot+lump_fuel_strike
+lump_empty_payload_a2a = lump_static+lump_pilot+lump_fuel_a2a
+lump_empty_payload_strike = lump_static+lump_pilot+lump_fuel_strike
+lump_empty = lump_static +lump_pilot
+lump_midmid_a2a = lump_static+lump_pilot+lump_mid_payload_a2a+(0.5*lump_fuel_a2a)
+lump_midmid_strike = lump_static+lump_pilot+lump_mid_payload_strike+(0.5*lump_fuel_strike)
+print("=====================")
 
 xCG_empty = lump_empty/W_empty
 print("xCG empty:", xCG_empty)
 
-xCG_empty_payload = lump_empty_payload/W_empty_payload
-print("xCG no payload + fuel:", xCG_empty_payload)
+xCG_empty_payload_a2a = lump_empty_payload_a2a/W_empty_payload_a2a
+print("a2a xCG no payload + fuel:", xCG_empty_payload_a2a)
+
+xCG_empty_payload_strike = lump_empty_payload_strike/W_empty_payload_strike
+print("strike xCG no payload + fuel:", xCG_empty_payload_strike)
 
 xCG_total_a2a = lump_total_a2a/W_total_a2a
 print("xCG a2a full payload + fuel:", xCG_total_a2a)
@@ -309,19 +318,22 @@ xCG_total_strike = lump_total_strike/W_total_strike
 print("xCG strike full payload + fuel:", xCG_total_strike)
 
 xCG_mid_a2a = lump_midmid_a2a/W_midfuel_midpayload_a2a
-print("xCG a2a half payload + half fuel:", xCG_mid_a2a)
+#print("xCG a2a half payload + half fuel:", xCG_mid_a2a)
 
 xCG_mid_strike = lump_midmid_strike/W_midfuel_midpayload_strike
-print("xCG strike half payload + half fuel:", xCG_mid_strike)
+#print("xCG strike half payload + half fuel:", xCG_mid_strike)
 
 LEMAC = 12.844
 LEMAC = LEMAC + origin_offset
-
+print("====================")
 xCG_empty_percent = (xCG_empty-LEMAC)/MAC * 100
 print("xCG_empty_percent:", xCG_empty_percent)
 
-xCG_empty_payload_percent = (xCG_empty_payload-LEMAC)/MAC * 100
-print("xCG_empty_payload", xCG_empty_payload_percent)
+xCG_empty_payload_a2a_percent = (xCG_empty_payload_a2a-LEMAC)/MAC * 100
+print("xCG_empty_payload", xCG_empty_payload_a2a_percent)
+
+xCG_empty_payload_strike_percent = (xCG_empty_payload_strike-LEMAC)/MAC * 100
+print("xCG_empty_payload", xCG_empty_payload_strike_percent)
 
 xCG_total_a2a_percent = (xCG_total_a2a-LEMAC)/MAC * 100
 print("xCG_total_a2a_percent", xCG_total_a2a_percent)
@@ -333,10 +345,72 @@ xCG_strike_empty = xCG_total_strike_percent - xCG_empty_percent
 print("strike to empty %:", xCG_strike_empty)
 
 xCG_a2a_empty = xCG_total_a2a_percent - xCG_empty_percent
-print("aa2a to empty %:", xCG_a2a_empty)
+print("a2a to empty %:", xCG_a2a_empty)
 
-xCG_strike_no_payload = xCG_total_strike_percent - xCG_empty_payload_percent
+xCG_strike_no_payload = xCG_total_strike_percent - xCG_empty_payload_strike_percent
 print("strike to no payload %:", xCG_strike_no_payload)
 
-xCG_a2a_no_payload = xCG_total_a2a_percent - xCG_empty_payload_percent
+xCG_a2a_no_payload = xCG_total_a2a_percent - xCG_empty_payload_a2a_percent
 print("a2a to no payload %:", xCG_a2a_no_payload)
+# Graph
+
+# ==========================
+# fuel arrays only
+resol = 1000 #resolution (data points)
+arr_fuel_a2a = np.linspace(0, W_fuel_a2a, resol)
+arr_fuel_strike = np.linspace(0, W_fuel_strike, resol)
+
+arr_fuel_a2a = np.array(arr_fuel_a2a)
+arr_fuel_strike = np.array(arr_fuel_strike)
+
+arr_moment_a2a = arr_fuel_a2a*xCG_fuel
+arr_moment_strike = arr_fuel_strike*xCG_fuel
+
+# ===========================
+# combining fuel arrays into other weights for operations
+# ===========================
+
+# Moments
+# full payload
+M_arr_oper_a2a_full = (lump_static+lump_pilot+lump_payload_a2a)+arr_moment_a2a
+M_arr_oper_strike_full = (lump_static+lump_pilot+lump_payload_strike)+arr_moment_strike
+
+# empty payload
+M_arr_oper_a2a_empty = (lump_static+lump_pilot)+arr_moment_a2a
+M_arr_oper_strike_empty = (lump_static+lump_pilot)+arr_moment_strike
+
+# =========================
+
+# Weights
+# full
+W_arr_oper_a2a_full = (W_empty+W_pilot+W_payload_a2a)+arr_fuel_a2a
+W_arr_oper_strike_full = (W_empty+W_pilot+W_payload_strike)+arr_fuel_strike
+
+# empty payload
+W_arr_oper_a2a_empty = (W_empty+W_pilot)+arr_fuel_a2a
+W_arr_oper_strike_empty = (W_empty+W_pilot)+arr_fuel_strike
+
+#print(W_arr_oper_a2a_empty[0])
+#print(W_arr_oper_strike_empty[0])
+#print(W_arr_oper_a2a_empty[-1])
+#print(W_arr_oper_strike_empty[-1])
+
+xCG_arr_a2a_full = M_arr_oper_a2a_full/W_arr_oper_a2a_full
+xCG_arr_a2a_empty = M_arr_oper_a2a_empty/W_arr_oper_a2a_empty
+xCG_arr_strike_full = M_arr_oper_strike_full/W_arr_oper_strike_full
+xCG_arr_strike_empty = M_arr_oper_strike_empty/W_arr_oper_strike_empty
+
+plt.title('Change in weight due to fuel burn vs xCG location')
+plt.xlabel("xCG (ft)")
+plt.ylabel("Weight (lbf)")
+#plt.plot(W_arr_oper_a2a_full, xCG_arr_a2a_full, label='A2A full payload')
+#plt.plot(W_arr_oper_a2a_empty, xCG_arr_a2a_empty, label='A2A empty payload')
+#plt.plot(W_arr_oper_strike_full, xCG_arr_strike_full, label='Strike full payload')
+#plt.plot(W_arr_oper_strike_empty, xCG_arr_strike_empty, label='Strike empty payload')
+plt.plot(xCG_arr_a2a_full, W_arr_oper_a2a_full, label='A2A full payload')
+plt.plot(xCG_arr_a2a_empty, W_arr_oper_a2a_empty, label='A2A empty payload', marker='x')
+plt.plot(xCG_arr_strike_full, W_arr_oper_strike_full, label='Strike full payload')
+plt.plot(xCG_arr_strike_empty, W_arr_oper_strike_empty, label='Strike empty payload')
+plt.legend(loc='best')
+plt.grid()
+plt.show()
