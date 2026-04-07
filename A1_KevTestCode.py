@@ -92,7 +92,7 @@ class AircraftParams:
     idle_frac: float = 0.05     # Idle thrust as fraction of max T/W
 
     # Thrust lapse with altitude: T = T_sl * (rho/rho0)^n
-    thrust_lapse_exp: float = 1.0
+    thrust_lapse_exp: float = 0.7
 
     # Thrust scales with W0 to hold T/W constant (the engine grows with the aircraft).
     # T/W_target is derived from the PDR value: T_sl_max * n_engines / W_dg_PDR.
@@ -993,7 +993,6 @@ def plot_results(res: dict, p: AircraftParams, label: str = ''):
     ax.set_title('Fuel Breakdown by Phase')
 
     plt.tight_layout()
-    plt.show(block=False)
 
 
 # ---------------------------------------------------------------------------
@@ -1029,7 +1028,6 @@ def trade_study_AR(p: AircraftParams,
     ax.set_title('Trade Study: AR vs W0\n(Physics-based wing weight)', fontsize=12)
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.show(block=False)
 
 
 # ---------------------------------------------------------------------------
