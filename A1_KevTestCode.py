@@ -92,7 +92,7 @@ class AircraftParams:
     idle_frac: float = 0.05     # Idle thrust as fraction of max T/W
 
     # Thrust lapse with altitude: T = T_sl * (rho/rho0)^n
-    thrust_lapse_exp: float = 0.7
+    thrust_lapse_exp: float = 1.0
 
     # Thrust scales with W0 to hold T/W constant (the engine grows with the aircraft).
     # T/W_target is derived from the PDR value: T_sl_max * n_engines / W_dg_PDR.
@@ -914,76 +914,86 @@ def print_results(res: dict, p: AircraftParams):
 # 14.  PLOTTING
 # ---------------------------------------------------------------------------
 
-def plot_results(res: dict, p: AircraftParams):
-    """Generate mission profile and weight history plots."""
-
+def plot_results(res: dict, p: AircraftParams, label: str = ''):
+    """
+    Plot weight fraction and cumulative fuel burn vs range over the full
+    flight regime (climb + cruise), plus a fuel breakdown pie chart.
+    """
     ch = res['climb_history']
     cr = res['cruise_history']
+    W0 = res['W0']
 
-    fig, axes = plt.subplots(2, 3, figsize=(15, 9))
-    fig.suptitle('Refined Sizing — Mission Profile', fontsize=14, fontweight='bold')
+    # ------------------------------------------------------------------
+    # Build unified range axis: climb phase then cruise phase
+    # ------------------------------------------------------------------
+    # Climb: x_nmi is already cumulative from brake-release
+    climb_R   = ch['x_nmi']                          # nmi
+    climb_W   = ch['W']                              # lbf at end of each step
+    climb_fuel = ch['fuel_cum']                       # cumulative fuel burned [lbf]
 
-    # ---- Plot 1: Altitude profile during climb ----
-    ax = axes[0, 0]
-    ax.plot(ch['x_nmi'], ch['h'] / 1000, 'b-', linewidth=2)
-    ax.set_xlabel('Distance [nmi]')
-    ax.set_ylabel('Altitude [kft]')
-    ax.set_title('Climb Altitude Profile')
+    # Cruise: R_nmi is cumulative within the cruise segment; offset by climb distance
+    cruise_offset = climb_R[-1] if len(climb_R) > 0 else 0.0
+    cruise_R  = cr['R_nmi'] + cruise_offset           # nmi (offset to follow climb)
+    cruise_W  = cr['W']                              # lbf
+    cruise_fuel = cr['fuel_cum'] + climb_fuel[-1]    # continue cumulative from climb end
+
+    # Concatenate for full-mission arrays
+    full_R    = np.concatenate([climb_R,  cruise_R])
+    full_W    = np.concatenate([climb_W,  cruise_W])
+    full_fuel = np.concatenate([climb_fuel, cruise_fuel])
+
+    # Weight fraction W/W0
+    full_Wfrac = full_W / W0
+
+    # Phase boundary for shading
+    climb_end_R = cruise_offset
+
+    # ------------------------------------------------------------------
+    # Figure: 1×3  (weight fraction | fuel burn | pie)
+    # ------------------------------------------------------------------
+    title_suffix = f' — {label}' if label else ''
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+    fig.suptitle(f'Refined Sizing — Mission Profile{title_suffix}',
+                 fontsize=13, fontweight='bold')
+
+    # ---- Plot 1: Weight fraction vs range ----
+    ax = axes[0]
+    ax.axvspan(0, climb_end_R, alpha=0.08, color='steelblue', label='Climb')
+    ax.axvspan(climb_end_R, full_R[-1], alpha=0.08, color='darkorange', label='Cruise')
+    ax.plot(full_R, full_Wfrac, 'b-', linewidth=2)
+    ax.set_xlabel('Cumulative Range [nmi]')
+    ax.set_ylabel('Weight Fraction  W / W₀')
+    ax.set_title('Weight Fraction vs Range')
+    ax.set_ylim(0.5, 1.05)
+    ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 
-    # ---- Plot 2: Rate of climb ----
-    ax = axes[0, 1]
-    ax.plot(ch['h'] / 1000, ch['RC'], 'g-', linewidth=2)
-    ax.axhline(y=500, color='r', linestyle='--', alpha=0.7, label='500 ft/min min.')
-    ax.set_xlabel('Altitude [kft]')
-    ax.set_ylabel('Rate of Climb [ft/min]')
-    ax.set_title('Rate of Climb vs Altitude')
-    ax.legend()
+    # ---- Plot 2: Cumulative fuel burned vs range ----
+    ax = axes[1]
+    ax.axvspan(0, climb_end_R, alpha=0.08, color='steelblue', label='Climb')
+    ax.axvspan(climb_end_R, full_R[-1], alpha=0.08, color='darkorange', label='Cruise')
+    ax.plot(full_R, full_fuel / 1000, 'r-', linewidth=2)
+    ax.set_xlabel('Cumulative Range [nmi]')
+    ax.set_ylabel('Fuel Burned [klbf]')
+    ax.set_title('Cumulative Fuel Consumption vs Range')
+    ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
 
-    # ---- Plot 3: Weight during climb ----
-    ax = axes[0, 2]
-    ax.plot(ch['x_nmi'], ch['W'] / 1000, 'r-', linewidth=2)
-    ax.set_xlabel('Distance [nmi]')
-    ax.set_ylabel('Weight [klbf]')
-    ax.set_title('Weight During Climb')
-    ax.grid(True, alpha=0.3)
-
-    # ---- Plot 4: L/D during cruise ----
-    ax = axes[1, 0]
-    ax.plot(cr['R_nmi'], cr['LD'], 'b-', linewidth=2)
-    ax.axhline(y=res['LD_max'], color='r', linestyle='--',
-               alpha=0.7, label=f'(L/D)_max = {res["LD_max"]:.1f}')
-    ax.set_xlabel('Range [nmi]')
-    ax.set_ylabel('L/D [-]')
-    ax.set_title('L/D During Cruise')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-
-    # ---- Plot 5: Weight during cruise ----
-    ax = axes[1, 1]
-    ax.plot(cr['R_nmi'], cr['W'] / 1000, 'g-', linewidth=2)
-    ax.set_xlabel('Range [nmi]')
-    ax.set_ylabel('Weight [klbf]')
-    ax.set_title('Weight During Cruise')
-    ax.grid(True, alpha=0.3)
-
-    # ---- Plot 6: Fuel breakdown pie chart ----
-    ax = axes[1, 2]
+    # ---- Plot 3: Fuel breakdown pie chart ----
+    ax = axes[2]
     breakdown = res['fuel_breakdown']
     labels = list(breakdown.keys())
     values = list(breakdown.values())
-    # Filter out near-zero slices for readability
     labels_f = [l for l, v in zip(labels, values) if v > 1.0]
     values_f = [v for v in values if v > 1.0]
-    ax.pie(values_f, labels=labels_f, autopct='%1.1f%%', startangle=90)
+    wedges, _ = ax.pie(values_f, labels=None, startangle=90)
+    legend_labels = [f'{l}  {100*v/sum(values_f):.1f}%' for l, v in zip(labels_f, values_f)]
+    ax.legend(wedges, legend_labels, loc='center left', bbox_to_anchor=(0.95, 0.5),
+              fontsize=8, frameon=True)
     ax.set_title('Fuel Breakdown by Phase')
 
     plt.tight_layout()
-    plt.savefig('/mnt/user-data/outputs/refined_sizing_plots.png', dpi=150,
-                bbox_inches='tight')
-    plt.show()
-    print("  Plot saved to refined_sizing_plots.png")
+    plt.show(block=False)
 
 
 # ---------------------------------------------------------------------------
@@ -1004,11 +1014,12 @@ def trade_study_AR(p: AircraftParams,
     W0_results = []
     DERIVED = {'k', 'TW_target'}   # fields computed in __post_init__, not init args
     for AR_val in AR_range:
-        p_copy    = AircraftParams(**{f.name: getattr(p, f.name)
+        # Pass AR_val directly into the constructor so __post_init__ recomputes k
+        p_copy = AircraftParams(**{**{f.name: getattr(p, f.name)
                                       for f in p.__dataclass_fields__.values()
-                                      if f.name not in DERIVED})
-        p_copy.AR = AR_val
-        res        = run_sizing(p_copy, W0_guess=W0_init, verbose=False)
+                                      if f.name not in DERIVED},
+                                   'AR': AR_val})
+        res = run_sizing(p_copy, W0_guess=W0_init, verbose=False)
         W0_results.append(res['W0'])
 
     fig, ax = plt.subplots(figsize=(7, 5))
@@ -1018,10 +1029,7 @@ def trade_study_AR(p: AircraftParams,
     ax.set_title('Trade Study: AR vs W0\n(Physics-based wing weight)', fontsize=12)
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig('/mnt/user-data/outputs/trade_study_AR.png', dpi=150,
-                bbox_inches='tight')
-    plt.show()
-    print("  AR trade study plot saved to trade_study_AR.png")
+    plt.show(block=False)
 
 
 # ---------------------------------------------------------------------------
@@ -1137,9 +1145,13 @@ if __name__ == '__main__':
                                 W0_guess=45000.0, tol=1.0, verbose=True)
     print_results(results_strike, params)
 
-    # --- Generate plots (for air-to-air as primary) ---
-    plot_results(results_a2a, params)
+    # --- Generate plots for both loadouts ---
+    plot_results(results_a2a,    params, label='Air-to-Air')
+    plot_results(results_strike, params, label='Ground Strike')
 
     # --- AR trade study ---
     print("\nRunning AR trade study...")
     trade_study_AR(params, AR_range=np.linspace(3.0, 9.0, 10), W0_init=45000.0)
+
+    # Keep all figure windows open until manually closed
+    plt.show()
