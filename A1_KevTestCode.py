@@ -92,7 +92,7 @@ class AircraftParams:
     idle_frac: float = 0.05     # Idle thrust as fraction of max T/W
 
     # Thrust lapse with altitude: T = T_sl * (rho/rho0)^n
-    thrust_lapse_exp: float = 0.7
+    thrust_lapse_exp: float = 1.0
 
     # Thrust scales with W0 to hold T/W constant (the engine grows with the aircraft).
     # T/W_target is derived from the PDR value: T_sl_max * n_engines / W_dg_PDR.
