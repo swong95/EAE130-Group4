@@ -7,6 +7,7 @@ h_wingtip = 12.73                   # ft -- from bottom of plane to wingtip midl
 h_fuselage = 8.72                   # ft -- fuselage's height
 h_landing_gear = 4                  # ft -- landing gear's height
 b = 35.4                            # ft -- wingspan
+t_w = 6                             # ft -- main landing gear tire's width
 L = 20                              # ft -- distance beween nose gear and main gear in x axis
 l = 8.75                            # ft -- distance from main gear to CG y center
 x_CG = 21.8796                      # ft
@@ -23,16 +24,17 @@ H = delta_h - midline_xsec + h_landing_gear     # Height from the bottom of xsec
 beta = math.atan(l / L)
 GSL = d * math.sin(beta)
 
+# Distance from the end of main landing gear to wingtip)
+P = 0.5 * b - (l + 0.5 * t_w)
+
 print(h_CG)
 print(d)
 print(H)
 print(GSL)
-
-# Half wingspan (distance from the plane's centerline to the wingtip)
-half_b = b / 2
+print(P)
 
 # Lateral ground clearance angle
-clearance_angle_rad = math.atan(H / half_b)
+clearance_angle_rad = math.atan(H / P)
 clearance_angle_deg = math.degrees(clearance_angle_rad)
 
 # Lateral tip-over (overturn) angle 
