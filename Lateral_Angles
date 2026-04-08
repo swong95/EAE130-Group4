@@ -1,0 +1,37 @@
+import math
+
+# Values from VSP 
+c = 17.99347                        # ft
+t_c = 0.09                          # Thickness-to-chord ratio
+h_wingtip = 12.73                   # ft -- from bottom of plane to wingtip midline (height)
+h_fuselage = 8.72                   # ft -- fuselage's height
+h_landing_gear = 4                  # ft -- landing gear's height
+b = 35.4                            # ft -- wingspan
+h_CG = 0.074 + h_landing_gear       # ft -- CG height from bottom of plane
+d = 28 - 21.8796                    # ft -- distance from most forward CG to main landing gear
+
+# Finding H = Height from bottom of lowest point to bottom of plane
+thickness = t_c * c                             # Thickness of wing lowest xsec (closest to fuselage)
+midline_xsec = 0.5 * thickness                  # Midline of xsec
+delta_h = h_wingtip - h_fuselage                # Height of the wing midline from bottom of the plane
+H = delta_h - midline_xsec + h_landing_gear     # Height from the bottom of xsec to ground
+
+print(h_CG)
+print(d)
+print(H)
+
+# Half wingspan (distance from the plane's centerline to the wingtip)
+half_b = b / 2
+
+# Lateral ground clearance angle
+clearance_angle_rad = math.atan(H / half_b)
+clearance_angle_deg = math.degrees(clearance_angle_rad)
+
+# Lateral tip-over (overturn) angle 
+tipover_angle_rad = math.atan(h_CG / d)
+tipover_angle_deg = math.degrees(tipover_angle_rad)
+
+print(f"Lateral clearance angle (θ): {clearance_angle_deg:.2f}°")
+print(f"Is clearance angle > 5°? {'Yes' if clearance_angle_deg > 5 else 'No'}")
+print(f"Lateral tip-over angle (θ): {tipover_angle_deg:.2f}°")
+print(f"Is tip-over angle > 54°? {'Yes' if tipover_angle_deg > 54 else 'No'}")
