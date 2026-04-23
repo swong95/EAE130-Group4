@@ -109,11 +109,11 @@ k_takeoff = CDi_takeoff / 1.456**2
 k_landing = CDi_landing / 1.456**2
 
 # Drag Polars
-CD_clean_polar = (CD0_clean + CD_flaps_clean + CD_trim_clean + CDwave_clean) + k_clean * (CL-0.2)**2
-CD_takeoff_no_gears_polar = (CD0_takeoff_no_gears + CD_flaps_takeoff + CD_trim_takeoff + CDwave_takeoff_no_gears) + k_takeoff * (CL-0.2)**2
-CD_takeoff_gears_polar = (CD0_takeoff_gears + CD_flaps_takeoff + CD_trim_takeoff + CDwave_takeoff_gears) + k_takeoff * (CL-0.2)**2
-CD_landing_no_gears_polar = (CD0_landing_no_gears + CD_flaps_landing + CD_trim_landing + CDwave_landing_no_gears) + k_landing * (CL-0.2)**2
-CD_landing_gears_polar = (CD0_landing_gears + CD_flaps_landing + CD_trim_landing + CDwave_landing_gears) + k_landing * (CL-0.2)**2
+CD_clean_polar = (CD0_clean + CD_flaps_clean + CD_trim_clean + CDwave_clean) + k_clean * (CL-0.31)**2
+CD_takeoff_no_gears_polar = (CD0_takeoff_no_gears + CD_flaps_takeoff + CD_trim_takeoff + CDwave_takeoff_no_gears) + k_takeoff * (CL-0.31)**2
+CD_takeoff_gears_polar = (CD0_takeoff_gears + CD_flaps_takeoff + CD_trim_takeoff + CDwave_takeoff_gears) + k_takeoff * (CL-0.31)**2
+CD_landing_no_gears_polar = (CD0_landing_no_gears + CD_flaps_landing + CD_trim_landing + CDwave_landing_no_gears) + k_landing * (CL-0.31)**2
+CD_landing_gears_polar = (CD0_landing_gears + CD_flaps_landing + CD_trim_landing + CDwave_landing_gears) + k_landing * (CL-0.31)**2
 
 # Plot
 plt.figure(figsize=(8,6))
