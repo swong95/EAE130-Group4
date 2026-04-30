@@ -3,12 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # weight data
-MTOW = 52027.7578 # 52027.7578 lbf for strike / 48891.4578 lbf for a2a from jonas' component_weights_and_cg
+MTOW = 48891.4578 # 52027.7578 lbf for strike / 48891.4578 lbf for a2a from jonas' component_weights_and_cg
 OEW  = 26614.557835667372   # lbf operating empty weight (empty weight from ^)
-MFW = 20191.6 # max fuel weight capacity W_fuel_a2a = 18967.3 lbf W_fuel_strike = 20191.6 
-PW = 4432 #Payload A2A Weight: 2520 Payload A2A Strike: 4432
+MFW = 18967.3 # max fuel weight capacity W_fuel_a2a = 18967.3 lbf W_fuel_strike = 20191.6 
+PW = 2520 #Payload A2A Weight: 2520 Payload A2A Strike: 4432
 MZFW = MTOW - MFW  # lb max zero fuel weight (check if this is correct?)
-MPW = MZFW - OEW  #Equipment A2A Group Weight: 8299.545411254301 Equipment Strike Group Weight: 10211.545411254301 (from jonas')
+MPW = MZFW - OEW 
 RF = 1800   #lbf: find a good source for this? https://info.publicintelligence.net/F18-EF-200.pdf
 
 # flight params from A2 improved drag polars
@@ -143,13 +143,13 @@ ax.plot(env_r, env_p, color='steelblue', linewidth=2.5,
 
 # Design point T
 ax.plot(range_T, payload_T, color='crimson', marker='D',
-        markersize=10, linestyle='None', label='Design Mission (Strike Payload and 1,400 nm)')
+        markersize=10, linestyle='None', label='Design Mission (A2A Payload and 1,400 nm)')
 ax.axhline(payload_T, color='crimson', linestyle='--', linewidth=1.1, alpha=0.5)
 ax.axvline(range_T,   color='crimson', linestyle='--', linewidth=1.1, alpha=0.5)
 
 # Annotate envelope points
-offsets = {'A': (15, 200), 'B': (15, 200),
-           'C': (15, -600), 'D': (15, 200)}
+offsets = {'A': (15, 100), 'B': (15, 100),
+           'C': (30, -600), 'D': (15, 100)}
 for pt, r, p in zip(['A','B','C','D'], env_r, env_p):
     dx, dy = offsets[pt]
     ax.annotate(f'{pt}\n({int(round(r)):,} nm, {int(round(p)):,} lb)',
@@ -163,7 +163,7 @@ ax.annotate(f'T: {int(payload_T):,} lb\nat {range_T} nm',
 
 ax.set_xlabel('Range (nm)', fontsize=12)
 ax.set_ylabel('Payload (lb)', fontsize=12)
-ax.set_title('Payload-Range Chart — F/A XX (Strike Config)', fontsize=14)
+ax.set_title('Payload-Range Chart — F/A XX (Air to Air (A2A)) Config)', fontsize=14)
 ax.set_xlim(0, max(env_r)+200)
 ax.set_ylim(0, MPW+1000)
 ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x):,}'))
