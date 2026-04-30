@@ -210,6 +210,8 @@ print("Propulsion Group Weight:", W_propulsion)
 
 W_payload_a2a = num_AIM120C*W_AIM120C + num_AIM9X*W_AIM9X
 W_payload_strike = num_AIM9X*W_AIM9X + num_JDAM*W_JDAM
+print("Payload A2A Weight:", W_payload_a2a)
+print("Payload Strike Weight:", W_payload_strike)
 
 W_equipment_static = W_avionics+W_firewall+W_flightcont+W_instr+W_hydraulics+W_elec+W_acai+W_furn
 print("Equipment Static Group Weight:", W_equipment_static)
@@ -223,14 +225,14 @@ print("Equipment Strike Group Weight:", W_equipment_strike)
 # Useful Group Weight Minus Fuel
 W_useful = W_pilot + (num_AIM120C*W_py_AIM120C) + (num_AIM9X*W_py_AIM9X) + (num_JDAM*W_py_JDAM)
 
-W_empty = W_structures+W_propulsion+W_equipment_static
+W_empty = W_structures+W_propulsion+W_equipment_static+W_pilot
 print("Empty Weigt:", W_empty)
 
-# W_all_min_fuel = W_structures+W_propulsion+W_equipment_a2a+W_useful
-# W_fuel = W_dg-W_all_min_fuel
+W_all_min_fuel = W_structures+W_propulsion+W_equipment_a2a+W_useful
+W_fuel = W_dg-W_all_min_fuel
 W_fuel_a2a = 18967.3 #lbf 
 W_fuel_strike = 20191.6 #lbf 
-# print("Fuel Weight:", W_fuel)
+print("Fuel Weight:", W_fuel)
 
 W_useful_report = W_useful + W_fuel_a2a
 print("Report Useful Group Weight:", W_useful_report)
