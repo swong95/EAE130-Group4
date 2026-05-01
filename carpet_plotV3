@@ -145,16 +145,16 @@ for j in range(len(S_vals)):
     
 # --- Design point ---
 ax.scatter(WS_design, F_design, color='black', s=80)
-ax.annotate('Design Point',
-            (WS_design, F_design),
-            xytext=(10, 10),
-            textcoords='offset points')
 
+# design point label 
+ax.text(WS_design+0.25, F_design,
+        f'  Design Point\nAR={AR_design}, S={S_design}',
+        fontsize=10, color='black')
 
 # --- Labels ---
 ax.set_xlabel('Wing Loading W/S [lb/ft²]')
 ax.set_ylabel('Fuel Burn [lb]')
-ax.set_title('Fuel Burn Carpet Plot (Varying AR, W/S, S)')
+ax.set_title("Trade Study 2: \n AR, W/S, S → Fuel Burn")
 ax.grid(True)
 
 plt.tight_layout()
