@@ -1259,8 +1259,8 @@ def sizing_function(AR, S_ref, tc):
     
 def carpet_plot_W0_WS_Mach(M_vals=[0.7, 0.85, 1.0]):
 
-    AR_vals = np.linspace(2.0, 6.0, 8)
-    WS_vals = np.linspace(50, 120, 5)  # [lb/ft^2]
+    AR_vals = np.linspace(2.0, 6.0, 3)
+    WS_vals = np.linspace(50, 120, 3)  # [lb/ft^2]
 
     linestyles = ['-', '--', ':']
     colors = plt.cm.plasma(np.linspace(0,1,len(WS_vals)))

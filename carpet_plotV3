@@ -1,0 +1,161 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Import KevTestCode components
+from A1_KevTestCode import AircraftParams, run_sizing
+
+# =============================================================================
+# BASELINE AIRCRAFT SETUP (match your KevTestCode inputs)
+# =============================================================================
+
+def create_base_params():
+    return AircraftParams(
+        # Geometry / aero
+        S_ref=600.0,
+        AR=2.09,
+        e=0.82,
+        tc=0.05,
+        taper=0.30,
+        sweep=40.0,
+        CD0=0.0165,
+
+        # Propulsion
+        T_sl_max=43000.0,
+        n_engines=1,
+        ct_cruise=0.866,
+        ct_loiter=0.80,
+        ct_sl=0.40,
+        idle_frac=0.05,
+
+        # Mission
+        h_cruise=40000.0,
+        M_cruise=0.85,
+        R_cruise=1400,
+        n_cruise_seg=15,   # reduced for speed
+        E_loiter=0.333,
+
+        # Payload
+        W_payload_a2a=5020,
+
+        # Weight model constants (same as KevTestCode)
+        W_en=6422.0,
+        S_vt=100.0,
+        S_r=100.0,
+        S_csw=200.0,
+        L_fus=40.28139,
+        D_fus=5.4,
+        W_fus=13.232,
+        L_t=8.72490,
+
+        # Structure factors
+        wing_fudge=0.85,
+        tail_fudge=0.83,
+        fuselage_fudge=0.90,
+        AIS_fudge=0.85,
+
+        Nz=10.5,
+        W_dg_PDR=43200.0,
+    )
+
+
+# =============================================================================
+# PARAMETRIC SWEEP
+# =============================================================================
+
+AR_vals = np.linspace(1.5, 4.0, 8)
+S_vals  = np.linspace(500, 900, 8)
+
+fuel_grid = np.zeros((len(AR_vals), len(S_vals)))
+WS_grid   = np.zeros((len(AR_vals), len(S_vals)))
+
+# =============================================================================
+# MAIN LOOP (THIS IS THE KEY DIFFERENCE)
+# =============================================================================
+
+for i, AR in enumerate(AR_vals):
+    for j, S in enumerate(S_vals):
+
+        # Create fresh params each iteration
+        p = create_base_params()
+
+        # Update geometry
+        p.AR = AR
+        p.S_ref = S
+
+        # Run full sizing loop (this solves for W0!)
+        results = run_sizing(
+            p,
+            W0_guess=45000,
+            tol=5.0,
+            verbose=False
+        )
+
+        W0 = results['W0']
+        Wf = results['W_fuel']
+
+        fuel_grid[i, j] = Wf
+        WS_grid[i, j]   = W0 / S
+
+
+# =============================================================================
+# DESIGN POINT
+# =============================================================================
+
+AR_design = 2.09
+S_design  = 600
+
+p_design = create_base_params()
+p_design.AR = AR_design
+p_design.S_ref = S_design
+
+res_design = run_sizing(p_design, verbose=False)
+
+F_design  = res_design['W_fuel']
+WS_design = res_design['W0'] / S_design
+
+
+# =============================================================================
+# CARPET PLOT (SWAPPED AXES)
+# =============================================================================
+
+fig, ax = plt.subplots(figsize=(11, 8))
+
+# --- Constant AR lines ---
+for i in range(len(AR_vals)):
+    x_vals = WS_grid[i, :]
+    y_vals = fuel_grid[i, :]
+
+    ax.plot(x_vals, y_vals, 'b-', alpha=0.7)
+
+    ax.text(x_vals[-1] - 1.5, y_vals[-1] + 50,
+            f'AR={AR_vals[i]:.2f}',
+            fontsize=8, color='blue')
+
+
+# --- Constant S lines ---
+for j in range(len(S_vals)):
+    x_vals = WS_grid[:, j]
+    y_vals = fuel_grid[:, j]
+
+    ax.plot(x_vals, y_vals, 'r-', alpha=0.7)
+
+    ax.text(x_vals[0] - 1, y_vals[0] - 200,
+            f'S={S_vals[j]:.0f}',
+            fontsize=8, color='red')
+    
+# --- Design point ---
+ax.scatter(WS_design, F_design, color='black', s=80)
+
+# design point label 
+ax.text(WS_design+0.25, F_design,
+        f'  Design Point\nAR={AR_design}, S={S_design}',
+        fontsize=10, color='black')
+
+# --- Labels ---
+ax.set_xlabel('Wing Loading W/S [lb/ft²]')
+ax.set_ylabel('Fuel Burn [lb]')
+ax.set_title("Trade Study 2: \n AR, W/S, S → Fuel Burn")
+ax.grid(True)
+
+plt.tight_layout()
+plt.show()
