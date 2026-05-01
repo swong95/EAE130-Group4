@@ -115,51 +115,46 @@ WS_design = res_design['W0'] / S_design
 
 
 # =============================================================================
-# CARPET PLOT
+# CARPET PLOT (SWAPPED AXES)
 # =============================================================================
 
 fig, ax = plt.subplots(figsize=(11, 8))
 
-# --- Constant AR lines (blue) ---
+# --- Constant AR lines ---
 for i in range(len(AR_vals)):
-    ax.plot(fuel_grid[i, :], WS_grid[i, :], 'b-', alpha=0.7)
+    x_vals = WS_grid[i, :]
+    y_vals = fuel_grid[i, :]
 
-    # Place label slightly RIGHT and DOWN of endpoint
-    x = fuel_grid[i, -1]
-    y = WS_grid[i, -1]
+    ax.plot(x_vals, y_vals, 'b-', alpha=0.7)
 
-    ax.text(x + 50, y - .5,   # adjust offsets as needed
+    ax.text(x_vals[-1] - 1.5, y_vals[-1] + 50,
             f'AR={AR_vals[i]:.2f}',
-            fontsize=8,
-            color='blue',
-            ha='left', va='top')
+            fontsize=8, color='blue')
 
 
-# --- Constant S lines (red) ---
+# --- Constant S lines ---
 for j in range(len(S_vals)):
-    ax.plot(fuel_grid[:, j], WS_grid[:, j], 'r-', alpha=0.7)
+    x_vals = WS_grid[:, j]
+    y_vals = fuel_grid[:, j]
 
-    # Place label slightly LEFT of the first point
-    x = fuel_grid[0, j]
-    y = WS_grid[0, j]
+    ax.plot(x_vals, y_vals, 'r-', alpha=0.7)
 
-    ax.text(x - 25, y-0.5,       # shift left
+    ax.text(x_vals[0] - 1, y_vals[0] - 200,
             f'S={S_vals[j]:.0f}',
-            fontsize=8,
-            color='red',
-            ha='right', va='center')
-
-
+            fontsize=8, color='red')
+    
 # --- Design point ---
-ax.scatter(F_design, WS_design, color='black', s=80)
+ax.scatter(WS_design, F_design, color='black', s=80)
 ax.annotate('Design Point',
-            (F_design, WS_design),
+            (WS_design, F_design),
             xytext=(10, 10),
             textcoords='offset points')
 
-ax.set_xlabel('Fuel Burn [lbf]')
-ax.set_ylabel('Wing Loading W/S [lb/ft²]')
-ax.set_title('Physics-Based Carpet Plot (Full Mission Sizing)')
+
+# --- Labels ---
+ax.set_xlabel('Wing Loading W/S [lb/ft²]')
+ax.set_ylabel('Fuel Burn [lb]')
+ax.set_title('Fuel Burn Carpet Plot (Varying AR, W/S, S)')
 ax.grid(True)
 
 plt.tight_layout()
