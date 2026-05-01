@@ -225,7 +225,7 @@ def thrust_available(h: float, p: AircraftParams, W0: float = None) -> float:
     return T_sl * (rho / rho0) ** p.thrust_lapse_exp
 
 ceiling = 40000
-alt = range(0, ceiling, 1000)
+alt = range(0, ceiling+1, 1000)
 
 rho_arr = []
 a_arr = []
@@ -238,12 +238,24 @@ for h in alt:
 rho_arr = np.array(rho_arr)
 a_arr = np.array(a_arr)
 
-w_strike = 52000
-stall_arr = ((2*52000)/(rho_arr*AircraftParams.S_ref*2.03))**0.5
+C_L_max_clean = 2.03
+W_strike = 52027 # lbf
+turn_load_factor = 6 # g, in sustained turn
+clean_stall_arr = ((2*W_strike)/(rho_arr*AircraftParams.S_ref*C_L_max_clean))**0.5
+turn_stall_arr = ((turn_load_factor*2*W_strike)/(rho_arr*AircraftParams.S_ref*C_L_max_clean))**0.5
 
+# ceiling line
+ceil_x = np.linspace(clean_stall_arr[-1], 1000, 1000)
+ceil_y = np.full_like(ceil_x, alt[-1])
 
+print("ceiling", ceil_y)
 
-# print('stall_arr', stall_arr)
+# print("stall_arr", stall_arr)
 plt.figure(1)
-plt.plot(stall_arr, alt)
+plt.plot(clean_stall_arr, alt)
+plt.plot(turn_stall_arr, alt)
+#plt.axhline(y=ceiling)
+plt.plot(ceil_x, ceil_y)
+plt.xlim(0, 900)
+plt.ylim(0, 65000)
 plt.show()
