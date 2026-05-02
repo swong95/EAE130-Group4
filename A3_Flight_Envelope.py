@@ -283,8 +283,8 @@ rho_arr = np.array(rho_arr)
 a_arr = np.array(a_arr)
 thrust_arr = np.array(thrust_arr)
 
-print("alt", alt)
-print("thrust_arr", thrust_arr)
+#print("alt", alt)
+#print("thrust_arr", thrust_arr)
 
 #  Change in Weight Array
 W_arr = np.linspace((W_strike-W_fuel), W_strike, 1000)
@@ -314,7 +314,7 @@ turn_stall_arr = (((turn_load_factor*2*W_strike)/(rho_arr*AircraftParams.S_ref*C
 ceil_x = np.linspace(clean_stall_arr[-1], turn_stall_arr[-1], 1000)
 ceil_y = np.full_like(ceil_x, alt[-1])
 
-print("ceiling", ceil_x)
+#print("ceiling", ceil_x)
 
 
 plt.figure(1)
