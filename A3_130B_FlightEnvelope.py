@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.path import Path
+from matplotlib.patches import PathPatch
 from ambiance import Atmosphere
 
 # Aircraft Parameters
@@ -30,11 +33,12 @@ q_max_psf = 2133  # Max dynamic pressure (psf) ~102 kPa, typical naval fighter s
 e_oswald = 0.8    # Oswald efficiency for swept wing
 
 # Turn rate requirements (Raymer Ch. 17)
-turn_alt_ft = 20000          # Altitude for turn rate constraint (ft)
-turn_rate_req_deg  = 8.0     # Minimum required sustained turn rate (deg/s)
-turn_rate_des_deg  = 10.0    # Desired sustained turn rate (deg/s)
-# Mid-mission weight: average of strike takeoff and empty
+turn_alt_ft = 20000
+turn_rate_req_deg = 8.0
+turn_rate_des_deg = 10.0
 Weight_mid_mission = (Weight_MTOW_Strike + Weight_Empty) / 2
+
+X_MAX = 2500  # ft/s x-axis limit
 
 
 # --- Atmosphere helpers ---
@@ -69,14 +73,12 @@ def stall_speed(Weight, rho):
 
 
 def stall_speed_vs_altitude(Weight, h_min_ft=0, h_max_ft=58500, n=500):
-    """Return arrays of altitude (ft) and 1g stall speed (ft/s) across altitude range."""
     altitudes = np.linspace(h_min_ft, h_max_ft, n)
     v_stall = np.array([stall_speed(Weight, density_at_altitude(h)) for h in altitudes])
     return altitudes, v_stall
 
 
 def corner_velocity_vs_altitude(Weight, g_load, h_min_ft=0, h_max_ft=58500, n=500):
-    """Return arrays of altitude (ft) and corner velocity (ft/s) for a given g-load."""
     altitudes = np.linspace(h_min_ft, h_max_ft, n)
     v_star = np.array([np.sqrt((2 * g_load * Weight) / (density_at_altitude(h) * S * CL_max))
                        for h in altitudes])
@@ -89,7 +91,6 @@ def max_speed(Thrust, rho, CD):
 
 
 def max_speed_vs_altitude(T_SL, CD, h_min_ft=0, h_max_ft=58500, n=500):
-    """Return arrays of altitude (ft) and max speed (ft/s) across altitude range."""
     altitudes = np.linspace(h_min_ft, h_max_ft, n)
     v_max = np.array([max_speed(thrust_at_altitude(T_SL, h), density_at_altitude(h), CD)
                       for h in altitudes])
@@ -97,14 +98,12 @@ def max_speed_vs_altitude(T_SL, CD, h_min_ft=0, h_max_ft=58500, n=500):
 
 
 def mach_limit_vs_altitude(mach, h_min_ft=0, h_max_ft=58500, n=500):
-    """Return arrays of altitude (ft) and speed (ft/s) for a constant Mach limit."""
     altitudes = np.linspace(h_min_ft, h_max_ft, n)
     v_mach = np.array([mach * speed_of_sound_at_altitude(h) for h in altitudes])
     return altitudes, v_mach
 
 
 def q_limit_vs_altitude(q_max, h_min_ft=0, h_max_ft=58500, n=500):
-    """Return arrays of altitude (ft) and speed (ft/s) at the dynamic pressure limit."""
     altitudes = np.linspace(h_min_ft, h_max_ft, n)
     v_q = np.array([np.sqrt(2 * q_max / density_at_altitude(h)) for h in altitudes])
     return altitudes, v_q
@@ -114,7 +113,6 @@ def aero_ceiling(T_SL, Weight, h_min_ft=0, h_max_ft=80000, n=4000):
     """
     Find aerodynamic ceiling: lowest altitude where thrust < D_min.
     D_min = 2 * W * sqrt(CD0 * k), where k = 1 / (pi * AR * e).
-    Returns ceiling altitude in feet.
     """
     k = 1.0 / (np.pi * AR * e_oswald)
     D_min = 2 * Weight * np.sqrt(CD_clean * k)
@@ -127,21 +125,11 @@ def aero_ceiling(T_SL, Weight, h_min_ft=0, h_max_ft=80000, n=4000):
 
 def sustained_turn_speed(turn_rate_deg_s, T_SL, Weight, h_ft, n_v=2000):
     """
-    Find the speed(s) at which the aircraft sustains the required turn rate at h_ft.
-    Uses Raymer Ch. 17: omega = g * sqrt(n_z^2 - 1) / V, solved for n_z, then
-    checks whether thrust can sustain that load factor at each candidate speed.
-
-    Load factor from turn rate: n_z = sqrt(1 + (omega * V / g)^2)
-    Thrust-limited n_z: n_z_thrust = T(h) / W * (V / V_stall_1g) ... via
-        T = D = q*S*(CD0 + k*CL^2), CL = n_z*W / (q*S)
-        Solving: n_z_max_thrust = sqrt((T/W * q*S - (q*S)^2 * CD0 / W) / (k * W))
-    CLmax-limited n_z: n_z_clmax = q * S * CL_max / W
-
-    Returns list of (V ft/s, n_z) pairs where sustained turn rate >= target.
+    Find speeds sustaining the required turn rate at h_ft.
     Ref: Raymer, "Aircraft Design: A Conceptual Approach", Ch. 17.
     """
     g = 32.174  # ft/s^2
-    omega = np.radians(turn_rate_deg_s)  # rad/s
+    omega = np.radians(turn_rate_deg_s)
     rho = density_at_altitude(h_ft)
     T_h = thrust_at_altitude(T_SL, h_ft)
     k = 1.0 / (np.pi * AR * e_oswald)
@@ -152,25 +140,14 @@ def sustained_turn_speed(turn_rate_deg_s, T_SL, Weight, h_ft, n_v=2000):
     results = []
     for V in speeds:
         q = 0.5 * rho * V**2
-
-        # Load factor required to achieve the target turn rate at this speed
         n_required = np.sqrt(1 + (omega * V / g)**2)
-
-        # CLmax limit on load factor
         n_clmax = (q * S * CL_max) / Weight
-
-        # Thrust limit on load factor: T = D, D = q*S*(CD0 + k*(n*W/(q*S))^2)
-        # Rearranging: k*(n*W)^2/(q*S) = T/S*q - CD0*q  => solve for n
         drag_term = (T_h / (q * S)) - CD_clean
         if drag_term <= 0:
-            continue  # thrust insufficient to overcome parasite drag at this speed
+            continue
         n_thrust = np.sqrt(drag_term / k) * (q * S) / Weight
-
-        n_sustained = min(n_clmax, n_thrust)
-
-        if n_sustained >= n_required:
-            results.append((V, n_sustained))
-
+        if min(n_clmax, n_thrust) >= n_required:
+            results.append((V, min(n_clmax, n_thrust)))
     return results
 
 
@@ -206,83 +183,125 @@ for label, T in [("Dry", Thrust_Dry), ("Afterburner", Thrust_Afterburner)]:
 print()
 
 
-# --- Combined flight envelope ---
-fig, ax = plt.subplots()
+# --- Pre-compute all boundary arrays on shared altitude grid ---
+N = 500
+h_ceil_AB_A2A = aero_ceiling(Thrust_Afterburner, Weight_MTOW_A2A)
+alts = np.linspace(0, h_ceil_AB_A2A, N)
+alts_k = alts / 1000  # altitude in 1000 ft for plotting
 
-# 1g stall boundaries (left edge)
-stall_configs = [
-    ("Stall - MTOW Strike", Weight_MTOW_Strike, "C0"),
-    ("Stall - MTOW A2A",    Weight_MTOW_A2A,    "C1"),
-]
-for label, W, color in stall_configs:
-    alts, vs = stall_speed_vs_altitude(W)
-    ax.plot(vs, alts / 1000, label=label, color=color, linestyle="--")
+_, vs_stall_strike = stall_speed_vs_altitude(Weight_MTOW_Strike, h_max_ft=h_ceil_AB_A2A, n=N)
+_, vs_stall_a2a    = stall_speed_vs_altitude(Weight_MTOW_A2A,    h_max_ft=h_ceil_AB_A2A, n=N)
+_, vm_dry          = max_speed_vs_altitude(Thrust_Dry,         CD_clean, h_max_ft=h_ceil_AB_A2A, n=N)
+_, vm_ab           = max_speed_vs_altitude(Thrust_Afterburner, CD_clean, h_max_ft=h_ceil_AB_A2A, n=N)
+_, v_mach23        = mach_limit_vs_altitude(2.3, h_max_ft=h_ceil_AB_A2A, n=N)
+_, v_q             = q_limit_vs_altitude(q_max_psf, h_max_ft=h_ceil_AB_A2A, n=N)
 
-# Max speed boundaries (right edge)
-max_configs = [
-    ("Max Speed - Dry",         Thrust_Dry,         "C3"),
-    ("Max Speed - Afterburner", Thrust_Afterburner, "C4"),
-]
-for label, T, color in max_configs:
-    alts, vm = max_speed_vs_altitude(T, CD_clean)
-    ax.plot(vm, alts / 1000, label=label, color=color, linestyle="-")
+_, vs_1g_strike = stall_speed_vs_altitude(Weight_MTOW_Strike, h_max_ft=h_ceil_AB_A2A, n=N)
+_, vs_1g_a2a    = stall_speed_vs_altitude(Weight_MTOW_A2A,    h_max_ft=h_ceil_AB_A2A, n=N)
+_, v_star_7g    = corner_velocity_vs_altitude(Weight_MTOW_Strike, g_load=7, h_max_ft=h_ceil_AB_A2A, n=N)
+_, v_star_8g    = corner_velocity_vs_altitude(Weight_MTOW_Strike, g_load=8, h_max_ft=h_ceil_AB_A2A, n=N)
 
-# Mach 2.3 limit
-alts_mach, v_mach = mach_limit_vs_altitude(2.3)
-ax.plot(v_mach, alts_mach / 1000, color="C7", linestyle="-.", label="Mach 2.3 Limit")
+# Ceiling altitudes for internal horizontal lines
+h_ceil_dry_strike = aero_ceiling(Thrust_Dry,         Weight_MTOW_Strike)
+h_ceil_ab_strike  = aero_ceiling(Thrust_Afterburner, Weight_MTOW_Strike)
+h_ceil_dry_a2a    = aero_ceiling(Thrust_Dry,         Weight_MTOW_A2A)
 
-# Dynamic pressure limit
-alts_q, v_q = q_limit_vs_altitude(q_max_psf)
-ax.plot(v_q, alts_q / 1000, color="C8", linestyle="-.", label=f"q_max = {q_max_psf} psf")
+# Envelope boundaries:
+#   Left  = A2A stall (lift limit)
+#   Right = min(AB max, Mach 2.3, q_max) — whichever is most restrictive at each altitude
+# This produces the classic "thumb" shape where q_max cuts off the bottom-right
+# (high-speed at low altitude is structurally limited).
+v_right = np.minimum(np.minimum(vm_ab, v_mach23), v_q)
 
-# Aerodynamic ceilings as horizontal lines
-ceil_configs = [
-    ("Ceil - Dry/Strike",  Thrust_Dry,         Weight_MTOW_Strike, "C3"),
-    ("Ceil - AB/Strike",   Thrust_Afterburner, Weight_MTOW_Strike, "C4"),
-    ("Ceil - Dry/A2A",     Thrust_Dry,         Weight_MTOW_A2A,    "C3"),
-    ("Ceil - AB/A2A",      Thrust_Afterburner, Weight_MTOW_A2A,    "C4"),
-]
-for label, T, W, color in ceil_configs:
-    h_ceil = aero_ceiling(T, W)
-    ax.axhline(h_ceil / 1000, color=color, linestyle=":", alpha=0.6,
-               label=f"{label}: {h_ceil / 1000:.1f}k ft")
+# Walk the boundary CCW: up the left edge, then back down the right edge.
+env_v = np.concatenate([vs_stall_a2a, v_right[::-1]])
+env_h = np.concatenate([alts_k,       alts_k[::-1]])
 
-# Maneuvering stall curves: V_stall_n = V_stall_1g * sqrt(n)
-for label, W, color in stall_configs:
-    alts, vs_1g = stall_speed_vs_altitude(W)
+
+# --- Plot ---
+fig, ax = plt.subplots(figsize=(8, 8), dpi=150)
+
+# Build envelope clip path (in data coordinates)
+clip_verts = list(zip(env_v, env_h))
+clip_path = Path(clip_verts)
+clip_patch = PathPatch(clip_path, transform=ax.transData, facecolor="none", edgecolor="none")
+ax.add_patch(clip_patch)
+
+def clipped(artist):
+    """Clip an artist (or list of artists) to the envelope boundary."""
+    if isinstance(artist, (list, tuple)):
+        for a in artist:
+            a.set_clip_path(clip_patch)
+    else:
+        artist.set_clip_path(clip_patch)
+    return artist
+
+# Fill main envelope interior (light blue)
+ax.fill(env_v, env_h, color="lightsteelblue", alpha=0.25, zorder=0)
+
+# Shade region between Mach 2.3 and afterburner max speed (where AB exceeds Mach limit)
+mask = vm_ab > v_mach23
+if mask.any():
+    ax.fill_betweenx(alts_k, v_mach23, np.minimum(vm_ab, v_q),
+                     where=mask, color="orange", alpha=0.20, zorder=1,
+                     label="AB > M2.3")
+
+# Outer boundary lines (these define the envelope, no clipping needed)
+ax.plot(vs_stall_a2a, alts_k, color="C1", linestyle="-",  lw=1.5, label="Stall (A2A)")
+ax.plot(vm_ab,    alts_k, color="C4", linestyle="-",  lw=1.5, label="V_max AB")
+ax.plot(v_mach23, alts_k, color="C7", linestyle="-.", lw=1.5, label="M2.3")
+ax.plot(v_q,      alts_k, color="C8", linestyle="-",  lw=1.5, label=f"q_max ({q_max_psf} psf)")
+
+# Top ceiling line (forms top of envelope, no clipping)
+ax.axhline(h_ceil_AB_A2A / 1000, color="C4", linestyle="-",  lw=1.5, alpha=0.8,
+           label=f"Ceiling AB/A2A ({h_ceil_AB_A2A/1000:.0f}k)")
+
+# Internal lines — all clipped to envelope
+clipped(ax.plot(vs_stall_strike, alts_k, color="C0", linestyle="--", lw=1.5, label="Stall (Strike)"))
+clipped(ax.plot(vm_dry, alts_k, color="C3", linestyle="-", lw=1.5, label="V_max Dry"))
+
+# Internal ceiling lines (clipped to envelope)
+for label, h_c, color, ls in [
+    ("Ceil Dry/Strike", h_ceil_dry_strike, "C3", ":"),
+    ("Ceil AB/Strike",  h_ceil_ab_strike,  "C4", ":"),
+    ("Ceil Dry/A2A",    h_ceil_dry_a2a,    "C3", ":"),
+]:
+    line = ax.axhline(h_c / 1000, color=color, linestyle=ls, lw=1.0, alpha=0.5,
+                      label=f"{label} ({h_c/1000:.0f}k)")
+    clipped(line)
+
+# Maneuvering stall curves (clipped)
+for W, color, label in [(Weight_MTOW_Strike, "C0", "Strike"),
+                         (Weight_MTOW_A2A,    "C1", "A2A")]:
+    _, vs_1g = stall_speed_vs_altitude(W, h_max_ft=h_ceil_AB_A2A, n=N)
     for g_load, ls in [(7, "--"), (8, ":")]:
-        ax.plot(vs_1g * np.sqrt(g_load), alts / 1000,
-                label=f"Stall {g_load}g - {label.split('- ')[1]}",
-                color=color, linestyle=ls, alpha=0.6)
+        clipped(ax.plot(vs_1g * np.sqrt(g_load), alts_k,
+                        color=color, linestyle=ls, lw=1.0, alpha=0.6,
+                        label=f"{g_load}g Stall ({label})"))
 
-# Corner velocity curves and shading (MTOW Strike as design weight)
-W_design = Weight_MTOW_Strike
-alts_7g, v_star_7g = corner_velocity_vs_altitude(W_design, g_load=7)
-alts_8g, v_star_8g = corner_velocity_vs_altitude(W_design, g_load=8)
+# Corner velocity curves and shading (clipped)
+clipped(ax.plot(v_star_7g, alts_k, color="C5", linestyle="-", lw=1.2, label="V* 7g"))
+clipped(ax.plot(v_star_8g, alts_k, color="C6", linestyle="-", lw=1.2, label="V* 8g"))
+margin_fill = ax.fill_betweenx(alts_k, v_star_7g, v_star_8g, alpha=0.15, color="C5", label="7-8g band")
+clipped(margin_fill)
 
-ax.plot(v_star_7g, alts_7g / 1000, color="C5", linestyle="-", label="Corner V* 7g (MTOW Strike)")
-ax.plot(v_star_8g, alts_8g / 1000, color="C6", linestyle="-", label="Corner V* 8g (MTOW Strike)")
-ax.fill_betweenx(alts_7g / 1000, v_star_7g, v_star_8g, alpha=0.15, color="C5", label="7g-8g margin")
-
-
-# Sustained turn rate markers at 20,000 ft
+# Sustained turn rate markers at 20,000 ft (clipped)
 turn_colors = {"Dry": "C3", "Afterburner": "C4"}
-for t_label, T in [("Dry", Thrust_Dry), ("Afterburner", Thrust_Afterburner)]:
-    for rate_label, rate, marker in [("8 deg/s", turn_rate_req_deg, "^"),
-                                     ("10 deg/s", turn_rate_des_deg, "D")]:
+for t_label, T in [("Dry", Thrust_Dry), ("AB", Thrust_Afterburner)]:
+    thrust_key = "Afterburner" if t_label == "AB" else t_label
+    for rate_label, rate, marker in [("8°/s", turn_rate_req_deg, "^"),
+                                     ("10°/s", turn_rate_des_deg, "D")]:
         pts = sustained_turn_speed(rate, T, Weight_mid_mission, turn_alt_ft)
         if pts:
-            # Plot the speed range as a horizontal bar at 20k ft
             v_lo, _ = pts[0]
             v_hi, _ = pts[-1]
-            color = turn_colors[t_label]
-            ax.plot([v_lo, v_hi], [turn_alt_ft / 1000, turn_alt_ft / 1000],
-                    color=color, linewidth=4, alpha=0.5, solid_capstyle="butt")
-            ax.scatter(v_lo, turn_alt_ft / 1000, marker=marker, s=60,
-                       color=color, zorder=6,
-                       label=f"Turn {rate_label} {t_label} ({v_lo:.0f}-{v_hi:.0f} ft/s)")
+            color = turn_colors[thrust_key]
+            clipped(ax.plot([v_lo, v_hi], [turn_alt_ft / 1000, turn_alt_ft / 1000],
+                            color=color, linewidth=4, alpha=0.5, solid_capstyle="butt"))
+            clipped(ax.scatter(v_lo, turn_alt_ft / 1000, marker=marker, s=60, color=color, zorder=6,
+                               label=f"{rate_label} {t_label}"))
 
-# Design flight conditions
+# Design flight conditions (clipped)
 design_points = [
     ("Cruise",      0.85, 35000),
     ("A2A Dash",    1.6,  30000),
@@ -290,15 +309,24 @@ design_points = [
 ]
 for dp_label, mach, h_ft in design_points:
     v = mach * speed_of_sound_at_altitude(h_ft)
-    ax.scatter(v, h_ft / 1000, marker="*", s=120, zorder=6)
+    h_plot = max(h_ft, 1000)  # nudge sea-level points up so the star isn't clipped
+    clipped(ax.scatter(v, h_plot / 1000, marker="*", s=120, zorder=6))
     h_label = "SL" if h_ft == 0 else f"{h_ft // 1000}k ft"
     ax.annotate(f"{dp_label}\nM{mach} / {h_label}",
-                xy=(v, h_ft / 1000), xytext=(8, 4),
+                xy=(v, h_plot / 1000), xytext=(8, 4),
                 textcoords="offset points", fontsize=7)
 
-ax.set_xlabel("Speed (ft/s)")
+ax.set_xlabel("Airspeed (ft/s)")
 ax.set_ylabel("Altitude (1000 ft)")
-ax.set_title("Flight Envelope")
-ax.legend(fontsize=7)
+ax.set_xlim(0, X_MAX)
+ax.set_ylim(0, h_ceil_AB_A2A / 1000 * 1.05)
+ax.set_title("F/A-XX Flight Envelope")
+ax.legend(fontsize=6, loc="upper left")
+
+# Secondary x-axis on top showing knots (1 ft/s = 0.592484 kts)
+ax_kts = ax.twiny()
+ax_kts.set_xlim(0, X_MAX * 0.592484)
+ax_kts.set_xlabel("Airspeed (kts)")
+
 plt.tight_layout()
 plt.show()
