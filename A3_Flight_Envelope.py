@@ -256,7 +256,7 @@ def best_climb_speed(W: float, h: float, p: AircraftParams,
 
 # ===========================================================================
 
-ceiling = 60000
+ceiling = 40000
 alt = np.linspace(0, ceiling+1, 1000)
 W_strike = 52027 # lbf
 W0 = W_strike
@@ -284,7 +284,7 @@ a_arr = np.array(a_arr)
 thrust_arr = np.array(thrust_arr)
 
 #print("alt", alt)
-#print("thrust_arr", thrust_arr)
+#print("a_arr", a_arr)
 
 #  Change in Weight Array
 W_arr = np.linspace((W_strike-W_fuel), W_strike, 1000)
@@ -293,6 +293,7 @@ W_load_arr = np.linspace((W_strike-W_fuel), W_strike, 1000)/600
 TW_arr = thrust_arr/W_arr
 
 C_L_max_clean = 2.03
+C_L_cruise = 0.06
 
 # q_bar array
 v_arr = np.linspace(1, 2200, 1000)
@@ -306,22 +307,24 @@ P_s = Velo*(TW_arr-(q*AircraftParams.CD0/W_load_arr)-(n**2*p.k*W_load_arr/q))
 
 
 # Stall lines
-turn_load_factor = 6 # g, in sustained turn
-clean_stall_arr = (((2*W_strike)/(rho_arr*AircraftParams.S_ref*C_L_max_clean))**0.5)/a_arr # mach
-turn_stall_arr = (((turn_load_factor*2*W_strike)/(rho_arr*AircraftParams.S_ref*C_L_max_clean))**0.5)/a_arr # mach
+turn_load_factor = 5 # g, in sustained turn
+clean_stall_arr = (((2*W_arr)/(rho_arr*AircraftParams.S_ref*C_L_max_clean))**0.5)/a_arr # mach
+turn_stall_arr = (((turn_load_factor*2*W_arr)/(rho_arr*AircraftParams.S_ref*C_L_max_clean))**0.5)/a_arr # mach
+max_thrust_arr = (((2*thrust_arr)/(rho_arr*AircraftParams.S_ref*(AircraftParams.CD0+(C_L_cruise**2/p.k))))**0.5)/a_arr
 
 # ceiling line
-ceil_x = np.linspace(clean_stall_arr[-1], turn_stall_arr[-1], 1000)
+ceil_x = np.linspace(clean_stall_arr[-1], max_thrust_arr[-1], 1000)
 ceil_y = np.full_like(ceil_x, alt[-1])
 
 #print("ceiling", ceil_x)
 
 
 plt.figure(1)
-plt.contour(Velo/a_arr, H, P_s, levels=[0])
+#plt.contour(Velo/a_arr, H, P_s, levels=[0])
 plt.plot(clean_stall_arr, alt)
 plt.plot(turn_stall_arr, alt)
+plt.plot(max_thrust_arr, alt)
 plt.plot(ceil_x, ceil_y)
 plt.xlim(0, 2)
-plt.ylim(0, 65000)
+plt.ylim(0, 50000)
 plt.show()
