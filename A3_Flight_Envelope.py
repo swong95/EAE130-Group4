@@ -61,7 +61,8 @@ class AircraftParams:
 
     # --- Propulsion (single engine) ---
     T_sl_max:  float = 43000  # Max sea-level static thrust per engine [lbf]
-    
+    T_max_total: float = 43000
+
     n_engines: int   = 1
     ct_cruise: float = 0.866     # TSFC at cruise [1/hr]
     ct_loiter: float = 0.80     # TSFC at loiter [1/hr]
@@ -224,38 +225,106 @@ def thrust_available(h: float, p: AircraftParams, W0: float = None) -> float:
     T_sl = p.T_sl_for_W0(W0) if W0 is not None else p.T_max_total
     return T_sl * (rho / rho0) ** p.thrust_lapse_exp
 
-ceiling = 40000
-alt = range(0, ceiling+1, 1000)
 
+# ---------------------------------------------------------------------------
+# 5.  BEST CLIMB SPEED FOR A JET  (slide 48)
+# ---------------------------------------------------------------------------
+
+def best_climb_speed(W: float, h: float, p: AircraftParams,
+                     W0: float = None) -> float:
+    """
+    Speed [ft/s] that maximises rate of climb for a jet at altitude h,
+    weight W, assuming thrust = T_available (max continuous).
+
+    W0 is the current sizing-loop gross weight, used to scale thrust
+    so T/W stays constant. Pass None to use fixed T_sl_max from params.
+    """
+    rho, _ = atmosphere(h)
+    T      = thrust_available(h, p, W0=W0)
+    TW     = T / W
+    WS     = W / p.S_ref
+    A      = TW * WS / rho
+    B      = 12.0 * p.CD0 * p.k * (WS / rho) ** 2
+    V2     = A + np.sqrt(A**2 + B)
+    return np.sqrt(max(V2, 1.0))
+
+
+
+
+
+
+
+# ===========================================================================
+
+ceiling = 40000
+alt = np.linspace(0, ceiling+1, 1000)
+W_strike = 52027 # lbf
+W0 = W_strike
+W_fuel = 20451.1 # lbf
+p = AircraftParams()
+
+
+# Density, Speed of Sound, and Thrust Arrays as a function of altitude
 rho_arr = []
 a_arr = []
+thrust_arr = []
 
 for h in alt:
     rho, a = atmosphere(h)
+    T = thrust_available(h, p, W0=None)
+    
+    
     rho_arr.append(rho)
     a_arr.append(a)
+    thrust_arr.append(T)
+    
     
 rho_arr = np.array(rho_arr)
 a_arr = np.array(a_arr)
+thrust_arr = np.array(thrust_arr)
+
+#print("alt", alt)
+#print("a_arr", a_arr)
+
+#  Change in Weight Array
+W_arr = np.linspace((W_strike-W_fuel), W_strike, 1000)
+W_load_arr = np.linspace((W_strike-W_fuel), W_strike, 1000)/600
+
+TW_arr = thrust_arr/W_arr
 
 C_L_max_clean = 2.03
-W_strike = 52027 # lbf
-turn_load_factor = 6 # g, in sustained turn
-clean_stall_arr = ((2*W_strike)/(rho_arr*AircraftParams.S_ref*C_L_max_clean))**0.5
-turn_stall_arr = ((turn_load_factor*2*W_strike)/(rho_arr*AircraftParams.S_ref*C_L_max_clean))**0.5
+C_L_cruise = 0.06
+
+# q_bar array
+v_arr = np.linspace(1, 2200, 1000)
+n = 3.8
+Velo, H = np.meshgrid(v_arr, alt)
+q = 0.5 * rho_arr * Velo**2
+D = q*AircraftParams.S_ref*(AircraftParams.CD0+ p.k *((W_strike/(q*AircraftParams.S_ref))**2))
+P_s = Velo*(TW_arr-(q*AircraftParams.CD0/W_load_arr)-(n**2*p.k*W_load_arr/q))
+
+
+
+
+# Stall lines
+turn_load_factor = 5 # g, in sustained turn
+clean_stall_arr = (((2*W_arr)/(rho_arr*AircraftParams.S_ref*C_L_max_clean))**0.5)/a_arr # mach
+turn_stall_arr = (((turn_load_factor*2*W_arr)/(rho_arr*AircraftParams.S_ref*C_L_max_clean))**0.5)/a_arr # mach
+max_thrust_arr = (((2*thrust_arr)/(rho_arr*AircraftParams.S_ref*(AircraftParams.CD0+(C_L_cruise**2/p.k))))**0.5)/a_arr
 
 # ceiling line
-ceil_x = np.linspace(clean_stall_arr[-1], 1000, 1000)
+ceil_x = np.linspace(clean_stall_arr[-1], max_thrust_arr[-1], 1000)
 ceil_y = np.full_like(ceil_x, alt[-1])
 
-print("ceiling", ceil_y)
+#print("ceiling", ceil_x)
 
-# print("stall_arr", stall_arr)
+
 plt.figure(1)
+#plt.contour(Velo/a_arr, H, P_s, levels=[0])
 plt.plot(clean_stall_arr, alt)
 plt.plot(turn_stall_arr, alt)
-#plt.axhline(y=ceiling)
+plt.plot(max_thrust_arr, alt)
 plt.plot(ceil_x, ceil_y)
-plt.xlim(0, 900)
-plt.ylim(0, 65000)
+plt.xlim(0, 2)
+plt.ylim(0, 50000)
 plt.show()
