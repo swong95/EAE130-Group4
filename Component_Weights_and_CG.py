@@ -225,7 +225,7 @@ print("Equipment Strike Group Weight:", W_equipment_strike)
 # Useful Group Weight Minus Fuel
 W_useful = W_pilot + (num_AIM120C*W_py_AIM120C) + (num_AIM9X*W_py_AIM9X) + (num_JDAM*W_py_JDAM)
 
-W_empty = W_structures+W_propulsion+W_equipment_static+W_pilot
+W_empty = W_structures+W_propulsion+W_equipment_static+W_useful
 print("Empty Weigt:", W_empty)
 
 W_all_min_fuel = W_structures+W_propulsion+W_equipment_a2a+W_useful
@@ -299,7 +299,7 @@ lump_total_a2a = lump_static+lump_payload_a2a+lump_pilot+lump_fuel_a2a
 lump_total_strike = lump_static+lump_payload_strike+lump_pilot+lump_fuel_strike
 lump_empty_payload_a2a = lump_static+lump_pilot+lump_fuel_a2a
 lump_empty_payload_strike = lump_static+lump_pilot+lump_fuel_strike
-lump_empty = lump_static +lump_pilot
+lump_empty = lump_static +lump_pilot 
 lump_midmid_a2a = lump_static+lump_pilot+lump_mid_payload_a2a+(0.5*lump_fuel_a2a)
 lump_midmid_strike = lump_static+lump_pilot+lump_mid_payload_strike+(0.5*lump_fuel_strike)
 print("=====================")
@@ -332,15 +332,15 @@ xCG_empty_percent = (xCG_empty-LEMAC)/MAC * 100
 print("xCG_empty_percent:", xCG_empty_percent)
 
 xCG_empty_payload_a2a_percent = (xCG_empty_payload_a2a-LEMAC)/MAC * 100
-print("xCG_empty_payload", xCG_empty_payload_a2a_percent)
+print("xCG_empty_payload_a2a_percent", xCG_empty_payload_a2a_percent)
 
 xCG_empty_payload_strike_percent = (xCG_empty_payload_strike-LEMAC)/MAC * 100
-print("xCG_empty_payload", xCG_empty_payload_strike_percent)
+print("xCG_empty_payload_strike_percent", xCG_empty_payload_strike_percent)
 
-xCG_total_a2a_percent = (xCG_total_a2a-LEMAC)/MAC * 100
+xCG_total_a2a_percent = ((xCG_total_a2a-LEMAC)/MAC) * 100
 print("xCG_total_a2a_percent", xCG_total_a2a_percent)
 
-xCG_total_strike_percent = (xCG_total_strike-LEMAC)/MAC * 100
+xCG_total_strike_percent = ((xCG_total_strike-LEMAC)/MAC) * 100
 print("xCG_total_strike_percent:", xCG_total_strike_percent)
 
 xCG_strike_empty = xCG_total_strike_percent - xCG_empty_percent
@@ -385,12 +385,12 @@ M_arr_oper_strike_empty = (lump_static+lump_pilot)+arr_moment_strike
 
 # Weights
 # full
-W_arr_oper_a2a_full = (W_empty+W_useful+W_payload_a2a)+arr_fuel_a2a
-W_arr_oper_strike_full = (W_empty+W_useful+W_payload_strike)+arr_fuel_strike
+W_arr_oper_a2a_full = (W_empty+W_payload_a2a)+arr_fuel_a2a
+W_arr_oper_strike_full = (W_empty+W_payload_strike)+arr_fuel_strike
 
 # empty payload
-W_arr_oper_a2a_empty = (W_empty+W_useful)+arr_fuel_a2a
-W_arr_oper_strike_empty = (W_empty+W_useful)+arr_fuel_strike
+W_arr_oper_a2a_empty = (W_empty)+arr_fuel_a2a
+W_arr_oper_strike_empty = (W_empty)+arr_fuel_strike
 
 #print(W_arr_oper_a2a_empty[0])
 #print(W_arr_oper_strike_empty[0])
