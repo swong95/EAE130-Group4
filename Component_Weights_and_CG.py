@@ -241,6 +241,8 @@ W_empty_payload_a2a = W_structures+W_propulsion+W_equipment_static+W_useful+W_fu
 W_empty_payload_strike = W_structures+W_propulsion+W_equipment_static+W_useful+W_fuel_strike
 W_total_a2a = W_structures+W_propulsion+W_equipment_a2a+W_useful+W_fuel_a2a
 W_total_strike = W_structures+W_propulsion+W_equipment_strike+W_useful+W_fuel_strike
+print("Total_a2a", W_total_a2a)
+print("Total_Strike", W_total_strike)
 #W_midfuel_midpayload_a2a = W_structures+W_propulsion+W_equipment_static+W_useful+(0.5*W_payload_a2a)+(0.6*W_fuel_a2a)
 #W_midfuel_midpayload_strike = W_structures+W_propulsion+W_equipment_static+W_useful+(0.5*W_payload_strike)+(0.6*W_fuel_strike)
 # ========================
