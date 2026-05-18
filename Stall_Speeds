@@ -9,9 +9,9 @@ rho_30k = 0.0008893  # slugs/ft^3 (air density at 30,000 ft.)
 g = 32.174 # ft/s^2 (gravity)
 
 # CL max of clean, takeoff, landing
-C_L_max_clean = 1.8
-C_L_max_takeoff = 2 # CL_max for takeoff, estimate from Roskam (Table from Slide 11 in 06-PreliminarySizing_Part2.pdf)
-C_L_max_landing = 2.1  # CL_max for landing, estimate from Roskam (Table from Slide 11 in 06-PreliminarySizing_Part2.pdf)
+C_L_max_clean = 0.98    # from drag polar
+C_L_max_takeoff = 1.109 # CL_max for takeoff, from drag polar
+C_L_max_landing = 1.428 # CL_max for landing, from drag polar
 
 # CL max of instantaneous turn
 V_inst_turn = 350 * 1.6878 # ft/s From Raymer Instantaneous Turn Section
